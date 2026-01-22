@@ -1,3 +1,47 @@
+`# Cirarn - Photo Story App
+
+Ứng dụng React Native cho phép người dùng tạo và chia sẻ câu chuyện bằng hình ảnh và ghi âm.
+
+## 🏗️ Kiến Trúc
+
+Dự án sử dụng **Feature-First + Clean Architecture**:
+
+```
+src/
+├── app/              # App configuration, navigation, theme
+├── core/             # Shared utilities, UI components, hooks
+├── domain/           # Business logic, models, repository interfaces
+├── data/             # Data layer, API, storage, repository implementations
+└── features/         # Feature modules (home, camera, mystory, etc.)
+```
+
+Chi tiết xem [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md)
+
+## 🎯 Tính Năng
+
+### Đã Implement
+
+- ✅ Bottom Tab Navigation (Home, Camera, My Story, Profile)
+- ✅ Home Feed với posts
+- ✅ Friends Wall
+- ✅ Camera Flow (Camera → Preview → Chapter Picker)
+- ✅ My Story với Chapters
+- ✅ Chapter Detail & Live View
+- ✅ Profile Screen
+- ✅ Subscription Plans
+
+### Cần Thêm
+
+- ⏳ Camera integration (react-native-vision-camera)
+- ⏳ Audio recording (react-native-audio-recorder-player)
+- ⏳ File system (react-native-fs)
+- ⏳ API integration
+- ⏳ Database (SQLite/Realm)
+- ⏳ Authentication
+- ⏳ Image picker
+
+---
+
 This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
 
 # Getting Started

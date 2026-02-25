@@ -1,11 +1,14 @@
 /**
  * DailyPhotoDetailScreen.tsx
  * Fullscreen Locket-style photo viewer for a specific day
- * 
- * Shows: date header, large photo, caption, time, horizontal thumbnail strip
+ *
+ * Features:
+ * - Swipe left/right on main photo to navigate
+ * - Thumbnail strip synced with main photo
+ * - Caption overlay + time display
  */
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -15,32 +18,32 @@ import {
   Dimensions,
   FlatList,
   StatusBar,
+  type ViewToken,
+  type ListRenderItemInfo,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { HomeStackParamList } from '../../../app/navigation/types';
 import type { Photo } from '../../../domain/models';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const PHOTO_SIZE = SCREEN_WIDTH - 48; // Main photo with padding
+const PHOTO_SIZE = SCREEN_WIDTH - 48; // Main photo with side padding (24 each)
 const THUMB_SIZE = 56;
+const THUMB_GAP = 12;
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'DailyPhotoDetailScreen'>;
 
 /**
- * Format date to Vietnamese Locket-style: "2026\ntháng 1 thứ 20"
+ * Format date to Vietnamese Locket-style: "2026\ntháng 2 thứ 11"
  */
 function formatDateHeader(date: Date): { year: string; dateLine: string } {
   const year = date.getFullYear().toString();
   const month = date.getMonth() + 1;
   const day = date.getDate();
-  return {
-    year,
-    dateLine: `tháng ${month} thứ ${day}`,
-  };
+  return { year, dateLine: `tháng ${month} thứ ${day}` };
 }
 
 /**
- * Format time from Date: "14:42"
+ * Format time from Date: "12:14"
  */
 function formatTime(date: Date): string {
   const hours = date.getHours().toString().padStart(2, '0');
@@ -48,78 +51,169 @@ function formatTime(date: Date): string {
   return `${hours}:${minutes}`;
 }
 
+/* ------------------------------------------------------------------ */
+
 export function DailyPhotoDetailScreen({ navigation, route }: Props) {
   const { photos, dateString, initialIndex } = route.params;
 
-  // Parse photos from params (serialized as JSON)
-  const photoList: Photo[] = photos.map((p: any) => ({
-    ...p,
-    createdAt: new Date(p.createdAt),
-  }));
+  // Parse photos once (Date objects from ISO strings)
+  const photoList: Photo[] = useMemo(
+    () =>
+      photos.map((p: any) => ({
+        ...p,
+        createdAt: new Date(p.createdAt),
+      })),
+    [photos],
+  );
 
   const startIdx = initialIndex ?? 0;
   const [selectedIndex, setSelectedIndex] = useState(startIdx);
+
+  // Refs for syncing the two FlatLists
+  const mainListRef = useRef<FlatList>(null);
   const thumbListRef = useRef<FlatList>(null);
 
+  // ---- derived values for the currently selected photo ----
   const selectedPhoto = photoList[selectedIndex];
-  const photoDate = selectedPhoto ? new Date(selectedPhoto.createdAt) : new Date();
   const { year, dateLine } = formatDateHeader(
-    dateString ? new Date(dateString) : photoDate,
+    dateString ? new Date(dateString) : new Date(selectedPhoto?.createdAt ?? Date.now()),
   );
+  const timeStr = selectedPhoto ? formatTime(new Date(selectedPhoto.createdAt)) : '';
 
-  const handleClose = () => {
-    navigation.goBack();
-  };
+  // ======================== HANDLERS ========================
+
+  const handleClose = () => navigation.goBack();
 
   const handleShare = () => {
-    // TODO: Implement share functionality
+    // TODO: share implementation
     console.log('Share photo:', selectedPhoto?.id);
   };
 
-  const handleSelectPhoto = (index: number) => {
-    setSelectedIndex(index);
-    // Scroll thumbnail strip to center the selected item
-    thumbListRef.current?.scrollToIndex({
-      index,
-      animated: true,
-      viewPosition: 0.5,
-    });
-  };
+  /**
+   * Called when the main paging FlatList settles on a new page (swipe)
+   */
+  const onViewableItemsChanged = useCallback(
+    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
+      if (viewableItems.length > 0 && viewableItems[0].index != null) {
+        const newIndex = viewableItems[0].index;
+        setSelectedIndex(newIndex);
+        // Scroll thumbnail strip to keep it centered
+        thumbListRef.current?.scrollToIndex({
+          index: newIndex,
+          animated: true,
+          viewPosition: 0.5,
+        });
+      }
+    },
+    [],
+  );
 
-  const renderThumbnail = ({ item, index }: { item: Photo; index: number }) => {
-    const isSelected = index === selectedIndex;
-    const thumbUri = item.thumbnailData || item.imageData;
+  const viewabilityConfig = useRef({ viewAreaCoveragePercentThreshold: 50 }).current;
 
-    return (
-      <TouchableOpacity
-        style={[styles.thumbItem, isSelected && styles.thumbItemSelected]}
-        onPress={() => handleSelectPhoto(index)}
-        activeOpacity={0.7}
-      >
-        {thumbUri ? (
-          <Image
-            source={{ uri: thumbUri }}
-            style={styles.thumbImage}
-            resizeMode="cover"
-          />
-        ) : (
-          <View style={styles.thumbPlaceholder}>
-            <Text style={styles.thumbPlaceholderText}>📷</Text>
+  /**
+   * Called when a thumbnail is tapped
+   */
+  const handleSelectPhoto = useCallback(
+    (index: number) => {
+      if (index === selectedIndex) { return; }
+      setSelectedIndex(index);
+
+      // Scroll main FlatList to the tapped photo
+      mainListRef.current?.scrollToIndex({ index, animated: true });
+
+      // Center thumbnail
+      thumbListRef.current?.scrollToIndex({
+        index,
+        animated: true,
+        viewPosition: 0.5,
+      });
+    },
+    [selectedIndex],
+  );
+
+  // ======================== RENDER ITEMS ========================
+
+  /** Render a single page in the main swipeable photo area */
+  const renderMainPhoto = useCallback(
+    ({ item }: ListRenderItemInfo<Photo>) => {
+      const uri = item.imageData || item.thumbnailData;
+      const photoCaption = item.message;
+
+      return (
+        <View style={styles.mainPhotoPage}>
+          <View style={styles.photoCard}>
+            {uri ? (
+              <Image source={{ uri }} style={styles.mainPhoto} resizeMode="cover" />
+            ) : (
+              <View style={[styles.mainPhoto, styles.photoPlaceholder]}>
+                <Text style={styles.photoPlaceholderText}>📷</Text>
+              </View>
+            )}
+
+            {/* Caption overlay at bottom */}
+            {photoCaption ? (
+              <View style={styles.captionOverlay}>
+                <Text style={styles.captionText}>{photoCaption}</Text>
+              </View>
+            ) : null}
           </View>
-        )}
-      </TouchableOpacity>
-    );
-  };
+        </View>
+      );
+    },
+    [],
+  );
 
-  const mainImageUri = selectedPhoto?.imageData || selectedPhoto?.thumbnailData;
-  const caption = selectedPhoto?.message;
-  const timeStr = selectedPhoto ? formatTime(new Date(selectedPhoto.createdAt)) : '';
+  /** Render a thumbnail in the bottom strip */
+  const renderThumbnail = useCallback(
+    ({ item, index }: ListRenderItemInfo<Photo>) => {
+      const isSelected = index === selectedIndex;
+      const thumbUri = item.thumbnailData || item.imageData;
+
+      return (
+        <TouchableOpacity
+          style={[styles.thumbItem, isSelected && styles.thumbItemSelected]}
+          onPress={() => handleSelectPhoto(index)}
+          activeOpacity={0.7}
+        >
+          {thumbUri ? (
+            <Image source={{ uri: thumbUri }} style={styles.thumbImage} resizeMode="cover" />
+          ) : (
+            <View style={styles.thumbPlaceholder}>
+              <Text style={styles.thumbPlaceholderText}>📷</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+      );
+    },
+    [selectedIndex, handleSelectPhoto],
+  );
+
+  // Layout helpers so FlatList can jump to index without measuring
+  const getMainItemLayout = useCallback(
+    (_data: any, index: number) => ({
+      length: PHOTO_SIZE,
+      offset: PHOTO_SIZE * index,
+      index,
+    }),
+    [],
+  );
+
+  const getThumbItemLayout = useCallback(
+    (_data: any, index: number) => ({
+      length: THUMB_SIZE + THUMB_GAP,
+      offset: (THUMB_SIZE + THUMB_GAP) * index,
+      index,
+    }),
+    [],
+  );
+
+  // ======================== JSX ========================
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
-      {/* Header: Close, Date, Share */}
+      {/* ---- Header ---- */}
       <View style={styles.header}>
         <TouchableOpacity onPress={handleClose} style={styles.headerButton}>
           <Text style={styles.closeIcon}>✕</Text>
@@ -135,60 +229,60 @@ export function DailyPhotoDetailScreen({ navigation, route }: Props) {
         </TouchableOpacity>
       </View>
 
-      {/* Main Photo Area */}
-      <View style={styles.photoArea}>
-        {mainImageUri ? (
-          <Image
-            source={{ uri: mainImageUri }}
-            style={styles.mainPhoto}
-            resizeMode="cover"
-          />
-        ) : (
-          <View style={[styles.mainPhoto, styles.photoPlaceholder]}>
-            <Text style={styles.photoPlaceholderText}>📷</Text>
-          </View>
-        )}
-
-        {/* Caption overlay at bottom of photo */}
-        {caption ? (
-          <View style={styles.captionOverlay}>
-            <Text style={styles.captionText}>{caption}</Text>
-          </View>
-        ) : null}
+      {/* ---- Main swipeable photo area ---- */}
+      <View style={styles.mainListWrapper}>
+        <FlatList
+          ref={mainListRef}
+          data={photoList}
+          renderItem={renderMainPhoto}
+          keyExtractor={(item) => item.id}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          initialScrollIndex={startIdx}
+          getItemLayout={getMainItemLayout}
+          onViewableItemsChanged={onViewableItemsChanged}
+          viewabilityConfig={viewabilityConfig}
+          bounces={false}
+          overScrollMode="never"
+          decelerationRate="fast"
+          snapToInterval={PHOTO_SIZE}
+          snapToAlignment="start"
+          style={styles.mainList}
+        />
       </View>
 
-      {/* Time */}
+      {/* ---- Time ---- */}
       <Text style={styles.timeText}>{timeStr}</Text>
 
-      {/* Spacer */}
+      {/* ---- Spacer ---- */}
       <View style={styles.spacer} />
 
-      {/* Bottom Thumbnail Strip */}
+      {/* ---- Bottom Thumbnail Strip ---- */}
       {photoList.length > 1 && (
         <View style={styles.thumbnailStrip}>
           <FlatList
             ref={thumbListRef}
             data={photoList}
             renderItem={renderThumbnail}
-            keyExtractor={(item, index) => item.id || `thumb-${index}`}
+            keyExtractor={(item, idx) => item.id || `thumb-${idx}`}
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.thumbnailContent}
             initialScrollIndex={startIdx > 2 ? startIdx - 2 : 0}
-            getItemLayout={(_data, index) => ({
-              length: THUMB_SIZE + 12,
-              offset: (THUMB_SIZE + 12) * index,
-              index,
-            })}
+            getItemLayout={getThumbItemLayout}
+            extraData={selectedIndex}
           />
         </View>
       )}
 
-      {/* Bottom padding */}
+      {/* ---- Bottom padding ---- */}
       <View style={styles.bottomPadding} />
     </View>
   );
 }
+
+/* ================================================================== */
 
 const styles = StyleSheet.create({
   container: {
@@ -196,6 +290,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#1A1A1A',
     alignItems: 'center',
   },
+
+  /* Header */
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -234,13 +330,27 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FFFFFF',
   },
-  photoArea: {
+
+  /* Main photo paging area */
+  mainListWrapper: {
     width: PHOTO_SIZE,
     height: PHOTO_SIZE,
     borderRadius: 24,
     overflow: 'hidden',
     marginTop: 24,
     backgroundColor: '#2C2C2E',
+  },
+  mainList: {
+    width: PHOTO_SIZE,
+    height: PHOTO_SIZE,
+  },
+  mainPhotoPage: {
+    width: PHOTO_SIZE,
+    height: PHOTO_SIZE,
+  },
+  photoCard: {
+    width: '100%',
+    height: '100%',
   },
   mainPhoto: {
     width: '100%',
@@ -271,21 +381,27 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
   },
+
+  /* Time */
   timeText: {
     fontSize: 16,
     color: '#8E8E93',
     marginTop: 16,
   },
+
+  /* Spacer */
   spacer: {
     flex: 1,
   },
+
+  /* Thumbnail strip */
   thumbnailStrip: {
     width: '100%',
     paddingVertical: 8,
   },
   thumbnailContent: {
     paddingHorizontal: 16,
-    gap: 12,
+    gap: THUMB_GAP,
     alignItems: 'center',
   },
   thumbItem: {
@@ -313,6 +429,8 @@ const styles = StyleSheet.create({
   thumbPlaceholderText: {
     fontSize: 20,
   },
+
+  /* Bottom */
   bottomPadding: {
     height: 40,
   },

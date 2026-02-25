@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { CameraStackParamList } from './types';
 import {
   CameraScreen,
+  SendScreen,
   PreviewScreen,
   ChapterPickerSheet,
 } from '../../features/camera/screens';
@@ -15,6 +16,11 @@ export function CameraStack() {
       <Stack.Screen
         name="CameraScreen"
         component={CameraScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="SendScreen"
+        component={SendScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen

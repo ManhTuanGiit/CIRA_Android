@@ -413,3 +413,301 @@ export function SendIcon({ size = 20, color = '#FFF' }: IconProps) {
     </View>
   );
 }
+
+/* ================================================================
+ * CLOSE / X — two crossed lines
+ * ================================================================ */
+export function CloseIcon({ size = 22, color = '#FFF' }: IconProps) {
+  const bw = 2.5;
+  const len = size * 0.65;
+  return (
+    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+      <View
+        style={{
+          position: 'absolute',
+          width: len,
+          height: bw,
+          backgroundColor: color,
+          borderRadius: bw / 2,
+          transform: [{ rotate: '45deg' }],
+        }}
+      />
+      <View
+        style={{
+          position: 'absolute',
+          width: len,
+          height: bw,
+          backgroundColor: color,
+          borderRadius: bw / 2,
+          transform: [{ rotate: '-45deg' }],
+        }}
+      />
+    </View>
+  );
+}
+
+/* ================================================================
+ * SEND PLANE — paper plane icon (Locket send button)
+ * ================================================================ */
+export function SendPlaneIcon({ size = 24, color = '#FFF' }: IconProps) {
+  return (
+    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+      {/* Main triangle body */}
+      <View
+        style={{
+          width: 0,
+          height: 0,
+          borderLeftWidth: size * 0.45,
+          borderRightWidth: size * 0.08,
+          borderBottomWidth: size * 0.25,
+          borderTopWidth: size * 0.25,
+          borderLeftColor: color,
+          borderRightColor: 'transparent',
+          borderBottomColor: 'transparent',
+          borderTopColor: 'transparent',
+          transform: [{ rotate: '-25deg' }],
+          position: 'absolute',
+        }}
+      />
+      {/* Tail fin */}
+      <View
+        style={{
+          width: 0,
+          height: 0,
+          borderLeftWidth: size * 0.22,
+          borderRightWidth: 0,
+          borderBottomWidth: size * 0.22,
+          borderTopWidth: 0,
+          borderLeftColor: color,
+          borderRightColor: 'transparent',
+          borderBottomColor: 'transparent',
+          borderTopColor: 'transparent',
+          transform: [{ rotate: '-25deg' }],
+          position: 'absolute',
+          bottom: size * 0.18,
+          left: size * 0.3,
+          opacity: 0.7,
+        }}
+      />
+    </View>
+  );
+}
+
+/* ================================================================
+ * TEXT / Aa — text editing icon
+ * ================================================================ */
+export function TextAaIcon({ size = 22, color = '#FFF' }: IconProps) {
+  // We'll just use the View-based approach to show "Aa" styled text
+  // Since this is complex to draw with Views, we use a simple approach
+  return (
+    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+      {/* Circle outline */}
+      <View
+        style={{
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          borderWidth: 2,
+          borderColor: color,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      />
+    </View>
+  );
+}
+
+/* ================================================================
+ * DOWNLOAD — arrow pointing down into tray
+ * ================================================================ */
+export function DownloadIcon({ size = 22, color = '#FFF' }: IconProps) {
+  return (
+    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+      {/* Arrow stem */}
+      <View
+        style={{
+          width: 2.5,
+          height: size * 0.45,
+          backgroundColor: color,
+          position: 'absolute',
+          top: size * 0.05,
+        }}
+      />
+      {/* Arrow head */}
+      <View
+        style={{
+          width: size * 0.3,
+          height: size * 0.3,
+          borderBottomWidth: 2.5,
+          borderRightWidth: 2.5,
+          borderColor: color,
+          transform: [{ rotate: '45deg' }],
+          position: 'absolute',
+          top: size * 0.25,
+        }}
+      />
+      {/* Tray bottom line */}
+      <View
+        style={{
+          position: 'absolute',
+          bottom: size * 0.05,
+          width: size * 0.7,
+          height: 2.5,
+          backgroundColor: color,
+          borderRadius: 1,
+        }}
+      />
+      {/* Tray left wall */}
+      <View
+        style={{
+          position: 'absolute',
+          bottom: size * 0.05,
+          left: size * 0.15,
+          width: 2.5,
+          height: size * 0.2,
+          backgroundColor: color,
+        }}
+      />
+      {/* Tray right wall */}
+      <View
+        style={{
+          position: 'absolute',
+          bottom: size * 0.05,
+          right: size * 0.15,
+          width: 2.5,
+          height: size * 0.2,
+          backgroundColor: color,
+        }}
+      />
+    </View>
+  );
+}
+
+/* ================================================================
+ * SINGLE PERSON — one person silhouette
+ * ================================================================ */
+export function PersonIcon({ size = 20, color = '#FFF' }: IconProps) {
+  const headSize = size * 0.34;
+  const bodyW = size * 0.5;
+  const bodyH = size * 0.28;
+  return (
+    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'flex-end' }}>
+      {/* Head */}
+      <View
+        style={{
+          width: headSize,
+          height: headSize,
+          borderRadius: headSize / 2,
+          backgroundColor: color,
+          position: 'absolute',
+          top: size * 0.08,
+        }}
+      />
+      {/* Body */}
+      <View
+        style={{
+          width: bodyW,
+          height: bodyH,
+          borderTopLeftRadius: bodyW / 2,
+          borderTopRightRadius: bodyW / 2,
+          backgroundColor: color,
+        }}
+      />
+    </View>
+  );
+}
+
+/* ================================================================
+ * HOME — simple house shape
+ * ================================================================ */
+export function HomeIcon({ size = 22, color = '#FFF' }: IconProps) {
+  const roofH = size * 0.38;
+  const bodyW = size * 0.6;
+  const bodyH = size * 0.38;
+  return (
+    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'flex-end' }}>
+      {/* Roof triangle */}
+      <View
+        style={{
+          position: 'absolute',
+          top: size * 0.05,
+          width: 0,
+          height: 0,
+          borderLeftWidth: size * 0.45,
+          borderRightWidth: size * 0.45,
+          borderBottomWidth: roofH,
+          borderLeftColor: 'transparent',
+          borderRightColor: 'transparent',
+          borderBottomColor: color,
+        }}
+      />
+      {/* Body */}
+      <View
+        style={{
+          width: bodyW,
+          height: bodyH,
+          backgroundColor: color,
+          borderBottomLeftRadius: size * 0.04,
+          borderBottomRightRadius: size * 0.04,
+        }}
+      />
+    </View>
+  );
+}
+
+/* ================================================================
+ * FAMILY — three people silhouettes
+ * ================================================================ */
+export function FamilyIcon({ size = 22, color = '#FFF' }: IconProps) {
+  const headSm = size * 0.2;
+  const headLg = size * 0.24;
+  const bodySm = size * 0.26;
+  const bodyLg = size * 0.32;
+  const bodyH = size * 0.18;
+  return (
+    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'flex-end' }}>
+      {/* Left person (small) */}
+      <View style={{ position: 'absolute', left: 0, bottom: 0, alignItems: 'center' }}>
+        <View style={{ width: headSm, height: headSm, borderRadius: headSm / 2, backgroundColor: color }} />
+        <View
+          style={{
+            width: bodySm,
+            height: bodyH,
+            borderTopLeftRadius: bodySm / 2,
+            borderTopRightRadius: bodySm / 2,
+            backgroundColor: color,
+            marginTop: 1,
+          }}
+        />
+      </View>
+      {/* Center person (large) */}
+      <View style={{ position: 'absolute', bottom: 0, alignItems: 'center' }}>
+        <View style={{ width: headLg, height: headLg, borderRadius: headLg / 2, backgroundColor: color }} />
+        <View
+          style={{
+            width: bodyLg,
+            height: bodyH * 1.1,
+            borderTopLeftRadius: bodyLg / 2,
+            borderTopRightRadius: bodyLg / 2,
+            backgroundColor: color,
+            marginTop: 1,
+          }}
+        />
+      </View>
+      {/* Right person (small) */}
+      <View style={{ position: 'absolute', right: 0, bottom: 0, alignItems: 'center' }}>
+        <View style={{ width: headSm, height: headSm, borderRadius: headSm / 2, backgroundColor: color }} />
+        <View
+          style={{
+            width: bodySm,
+            height: bodyH,
+            borderTopLeftRadius: bodySm / 2,
+            borderTopRightRadius: bodySm / 2,
+            backgroundColor: color,
+            marginTop: 1,
+          }}
+        />
+      </View>
+    </View>
+  );
+}

@@ -174,6 +174,32 @@ export interface MonthGroup {
   dailyPhotos: DailyPhoto[];
 }
 
+/**
+ * Friend model - represents a connected user
+ */
+export interface Friend {
+  id: string;
+  name: string;
+  username: string;
+  avatar?: string; // URL or local path
+}
+
+/**
+ * ShareGroup model - a named group of friends (e.g. "Gia đình", custom groups)
+ */
+export interface ShareGroup {
+  id: string;
+  name: string;
+  icon?: string; // Optional icon identifier
+  members: Friend[];
+  createdAt: Date;
+}
+
+/**
+ * AudienceType — who to share a photo with
+ */
+export type AudienceType = 'all' | 'friends' | 'family';
+
 // ============================================
 // UTILITY TYPES
 // ============================================

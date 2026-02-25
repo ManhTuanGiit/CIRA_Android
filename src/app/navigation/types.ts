@@ -22,6 +22,9 @@ export type HomeStackParamList = {
 // Camera Stack Navigator
 export type CameraStackParamList = {
   CameraScreen: undefined;
+  SendScreen: {
+    photoUri: string;
+  };
   PreviewScreen: {
     photoUri: string;
   };

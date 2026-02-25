@@ -1,14 +1,15 @@
 /**
  * CameraScreen.tsx
- * Locket-style camera screen — polished dark UI with custom View-based icons.
+ * Locket-style camera screen — matches Locket's actual UI.
  *
  * Layout (top → bottom):
- *   1. Header row: avatar (gradient ring) | friend count pill | chat bubble
- *   2. Camera viewfinder (large rounded rectangle, 1:1)
- *      – flash button top-left · zoom badge top-right
- *   3. Caption input (pill-shaped)
- *   4. Controls row: gallery | capture ring (gold) | flip camera
- *   5. "Lịch sử" history link with badge + chevron
+ *   1. Header row: avatar | friend count pill | chat icon
+ *   2. Camera viewfinder (large rounded rect, nearly full width)
+ *      – flash button (top-left) · zoom badge (top-right)
+ *   3. Controls row: gallery | capture ring (gold) | flip camera
+ *   4. History link with badge + chevron
+ *
+ * After capture → navigates to SendScreen (Gửi đến...)
  */
 
 import React, { useEffect } from 'react';
@@ -19,7 +20,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   Dimensions,
-  TextInput,
   StatusBar,
   ActivityIndicator,
   Platform,
@@ -47,8 +47,8 @@ import {
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const VIEWFINDER_SIZE = SCREEN_WIDTH - 24;
-const CAPTURE_OUTER = 80;
-const CAPTURE_INNER = 66;
+const CAPTURE_OUTER = 78;
+const CAPTURE_INNER = 64;
 
 type Props = CompositeScreenProps<
   NativeStackScreenProps<CameraStackParamList, 'CameraScreen'>,
@@ -61,12 +61,10 @@ export function CameraScreen({ navigation }: Props) {
     flashOn,
     capturing,
     photoUri,
-    caption,
     toggleCamera,
     toggleFlash,
     capturePhoto,
     pickFromGallery,
-    setCaption,
     clearPhoto,
     requestCameraPermission,
   } = useCameraVM();
@@ -82,12 +80,19 @@ export function CameraScreen({ navigation }: Props) {
   const handleCapture = async () => {
     const uri = await capturePhoto();
     if (uri) {
-      navigation.navigate('PreviewScreen', { photoUri: uri });
+      // Navigate to the send screen with audience picker
+      navigation.navigate('SendScreen', { photoUri: uri });
+      // Clear photo state so cam is fresh when user returns
+      clearPhoto();
     }
   };
 
   const handleGallery = async () => {
-    await pickFromGallery();
+    const uri = await pickFromGallery();
+    if (uri) {
+      navigation.navigate('SendScreen', { photoUri: uri });
+      clearPhoto();
+    }
   };
 
   return (
@@ -96,27 +101,20 @@ export function CameraScreen({ navigation }: Props) {
 
       {/* ============ HEADER ============ */}
       <View style={styles.header}>
-        {/* Avatar with gradient ring → navigate Home */}
+        {/* Avatar → Home */}
         <TouchableOpacity onPress={goHome} activeOpacity={0.7}>
-          <LinearGradient
-            colors={['#FFD700', '#FF8C00', '#FF6347']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.avatarRing}
-          >
-            <View style={styles.avatarInner}>
-              <Text style={styles.avatarLetter}>M</Text>
-            </View>
-          </LinearGradient>
+          <View style={styles.avatarCircle}>
+            <Text style={styles.avatarLetter}>M</Text>
+          </View>
         </TouchableOpacity>
 
         {/* Friend count pill */}
         <TouchableOpacity style={styles.friendPill} activeOpacity={0.7}>
           <PeopleIcon size={16} color="#FFF" />
-          <Text style={styles.friendLabel}>33 bạn bè</Text>
+          <Text style={styles.friendLabel}>33 người bạn</Text>
         </TouchableOpacity>
 
-        {/* Chat button */}
+        {/* Chat */}
         <TouchableOpacity style={styles.headerBtn} activeOpacity={0.7}>
           <ChatBubbleIcon size={18} color="#FFF" />
         </TouchableOpacity>
@@ -128,55 +126,33 @@ export function CameraScreen({ navigation }: Props) {
           {photoUri ? (
             <Image
               source={{ uri: photoUri }}
-              style={styles.preview}
+              style={styles.previewImg}
               resizeMode="cover"
             />
           ) : (
             <View style={styles.cameraPlaceholder}>
-              <CameraIcon size={56} color="rgba(255,255,255,0.25)" />
-              <Text style={styles.placeholderHint}>Chạm để chụp</Text>
+              <CameraIcon size={52} color="rgba(255,255,255,0.2)" />
             </View>
           )}
 
-          {/* Flash toggle — top-left overlay */}
+          {/* Flash — top-left */}
           <TouchableOpacity
             style={styles.overlayBtn}
             onPress={toggleFlash}
             activeOpacity={0.7}
           >
             {flashOn ? (
-              <FlashIcon size={18} color="#FFD700" />
+              <FlashIcon size={17} color="#FFD700" />
             ) : (
-              <FlashOffIcon size={18} color="#FFF" />
+              <FlashOffIcon size={17} color="#FFF" />
             )}
           </TouchableOpacity>
 
-          {/* Zoom badge — top-right overlay */}
+          {/* Zoom — top-right */}
           <View style={[styles.overlayBtn, styles.overlayRight]}>
             <Text style={styles.zoomLabel}>1×</Text>
           </View>
-
-          {/* Front / back indicator — bottom-right */}
-          <View style={[styles.facingBadge]}>
-            <Text style={styles.facingText}>
-              {facing === 'front' ? 'Trước' : 'Sau'}
-            </Text>
-          </View>
         </View>
-      </View>
-
-      {/* ============ CAPTION INPUT ============ */}
-      <View style={styles.captionWrap}>
-        <TextInput
-          style={styles.captionInput}
-          placeholder="Gửi tin nhắn..."
-          placeholderTextColor="rgba(255,255,255,0.35)"
-          value={caption}
-          onChangeText={setCaption}
-          maxLength={120}
-          returnKeyType="done"
-          selectionColor="#FFD700"
-        />
       </View>
 
       {/* ============ CONTROLS ============ */}
@@ -187,48 +163,42 @@ export function CameraScreen({ navigation }: Props) {
           onPress={handleGallery}
           activeOpacity={0.7}
         >
-          <GalleryIcon size={30} color="#FFF" />
+          <GalleryIcon size={28} color="#FFF" />
         </TouchableOpacity>
 
-        {/* Capture ring */}
+        {/* Capture */}
         <TouchableOpacity
           onPress={handleCapture}
           activeOpacity={0.85}
           disabled={capturing}
-          style={styles.captureTouch}
         >
-          <LinearGradient
-            colors={['#FFD700', '#FFA500']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.captureOuter}
-          >
+          <View style={styles.captureOuter}>
             {capturing ? (
-              <ActivityIndicator size="large" color="#000" />
+              <ActivityIndicator size="large" color="#FFD700" />
             ) : (
               <View style={styles.captureInner} />
             )}
-          </LinearGradient>
+          </View>
         </TouchableOpacity>
 
-        {/* Flip camera */}
+        {/* Flip */}
         <TouchableOpacity
           style={styles.sideBtn}
           onPress={toggleCamera}
           activeOpacity={0.7}
         >
-          <CameraFlipIcon size={28} color="#FFF" />
+          <CameraFlipIcon size={26} color="#FFF" />
         </TouchableOpacity>
       </View>
 
-      {/* ============ HISTORY LINK ============ */}
+      {/* ============ HISTORY ============ */}
       <TouchableOpacity style={styles.historyRow} activeOpacity={0.7}>
         <View style={styles.historyBadge}>
           <Text style={styles.historyBadgeNum}>2</Text>
         </View>
-        <Text style={styles.historyText}>Lịch sử</Text>
-        <ChevronDownIcon size={16} color="#8E8E93" />
+        <Text style={styles.historyLabel}>Lịch sử</Text>
       </TouchableOpacity>
+      <ChevronDownIcon size={18} color="#8E8E93" />
     </SafeAreaView>
   );
 }
@@ -236,16 +206,6 @@ export function CameraScreen({ navigation }: Props) {
 /* ==================================================================
  * STYLES
  * ================================================================== */
-
-const SHADOW = Platform.select({
-  ios: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-  },
-  android: { elevation: 8 },
-}) as object;
 
 const styles = StyleSheet.create({
   root: {
@@ -261,36 +221,28 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     width: '100%',
     paddingHorizontal: 16,
-    paddingTop: 2,
-    paddingBottom: 10,
+    paddingTop: 4,
+    paddingBottom: 12,
   },
-
-  avatarRing: {
+  avatarCircle: {
     width: 44,
     height: 44,
     borderRadius: 22,
+    backgroundColor: '#3A3A3C',
     alignItems: 'center',
     justifyContent: 'center',
-    ...SHADOW,
-  },
-  avatarInner: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#1C1C1E',
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#555',
   },
   avatarLetter: {
     fontSize: 17,
     fontWeight: '800',
     color: '#FFF',
   },
-
   friendPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: '#2C2C2E',
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 22,
@@ -300,56 +252,47 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#FFF',
-    letterSpacing: 0.1,
   },
-
   headerBtn: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: '#2C2C2E',
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   /* ---- Viewfinder ---- */
   viewfinderWrap: {
-    marginTop: 2,
-    ...SHADOW,
+    flex: 1,
+    justifyContent: 'center',
+    marginVertical: 4,
   },
   viewfinder: {
     width: VIEWFINDER_SIZE,
-    height: VIEWFINDER_SIZE,
-    borderRadius: 36,
+    height: VIEWFINDER_SIZE * 1.15,
+    borderRadius: 32,
     overflow: 'hidden',
-    backgroundColor: '#111',
+    backgroundColor: '#1A1A1A',
   },
   cameraPlaceholder: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#1A1714',
+    backgroundColor: '#1C1814',
   },
-  placeholderHint: {
-    marginTop: 12,
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.25)',
-    fontWeight: '500',
-    letterSpacing: 0.3,
-  },
-  preview: {
+  previewImg: {
     width: '100%',
     height: '100%',
   },
-
   overlayBtn: {
     position: 'absolute',
     top: 14,
     left: 14,
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0,0,0,0.5)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -362,101 +305,64 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#FFF',
   },
-  facingBadge: {
-    position: 'absolute',
-    bottom: 14,
-    right: 14,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-  },
-  facingText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: 'rgba(255,255,255,0.7)',
-  },
 
-  /* ---- Caption ---- */
-  captionWrap: {
-    width: '100%',
-    paddingHorizontal: 20,
-    marginTop: 14,
-  },
-  captionInput: {
-    backgroundColor: '#1C1C1E',
-    borderRadius: 24,
-    paddingHorizontal: 20,
-    paddingVertical: Platform.OS === 'ios' ? 12 : 10,
-    fontSize: 15,
-    color: '#FFF',
-    textAlign: 'center',
-    letterSpacing: 0.2,
-  },
-
-  /* ---- Controls row ---- */
+  /* ---- Controls ---- */
   controls: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
-    paddingHorizontal: 32,
-    marginTop: 18,
-    gap: 32,
+    paddingHorizontal: 40,
+    paddingVertical: 16,
+    gap: 40,
   },
   sideBtn: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: '#1C1C1E',
+    width: 48,
+    height: 48,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-
-  captureTouch: {
-    ...SHADOW,
   },
   captureOuter: {
     width: CAPTURE_OUTER,
     height: CAPTURE_OUTER,
     borderRadius: CAPTURE_OUTER / 2,
+    borderWidth: 4,
+    borderColor: '#FFD700',
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'transparent',
   },
   captureInner: {
     width: CAPTURE_INNER,
     height: CAPTURE_INNER,
     borderRadius: CAPTURE_INNER / 2,
     backgroundColor: '#FFF',
-    borderWidth: 3,
-    borderColor: 'rgba(0,0,0,0.08)',
   },
 
   /* ---- History ---- */
   historyRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 16,
     gap: 6,
+    marginBottom: 4,
   },
   historyBadge: {
-    minWidth: 22,
-    height: 22,
-    borderRadius: 11,
+    minWidth: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: '#FFD700',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 6,
   },
   historyBadgeNum: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '800',
     color: '#000',
   },
-  historyText: {
+  historyLabel: {
     fontSize: 15,
     fontWeight: '600',
     color: '#FFF',
-    letterSpacing: 0.2,
   },
 });

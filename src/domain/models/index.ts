@@ -126,6 +126,37 @@ export interface User {
   createdAt: Date;
 }
 
+/**
+ * Streak model - tracks consecutive days of photo uploads (Locket-style)
+ */
+export interface Streak {
+  currentStreak: number; // Current consecutive days
+  longestStreak: number; // All-time longest streak
+  lastPhotoDate: Date; // Last date a photo was uploaded
+  totalPhotos: number; // Total photos uploaded
+}
+
+/**
+ * DailyPhoto - represents photo(s) uploaded on a specific day
+ */
+export interface DailyPhoto {
+  id: string;
+  date: Date; // The day this photo was taken
+  photos: Photo[]; // Array of photos for this day (can be multiple)
+  thumbnailUrl?: string; // Primary photo thumbnail
+  photoCount: number; // Number of photos for this day
+  hasVoice: boolean; // Any photo has voice note
+}
+
+/**
+ * MonthGroup - groups daily photos by month (for calendar view)
+ */
+export interface MonthGroup {
+  monthKey: string; // Format: "YYYY-MM" or "tháng M YYYY"
+  monthDisplay: string; // Display: "tháng 2 2026"
+  dailyPhotos: DailyPhoto[];
+}
+
 // ============================================
 // UTILITY TYPES
 // ============================================

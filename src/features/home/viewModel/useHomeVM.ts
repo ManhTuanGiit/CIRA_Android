@@ -3,137 +3,118 @@
  * Home Feed ViewModel for React Native
  * Based on Swift: Cira/Views/Home/HomeViewModel.swift
  * 
- * Manages feed posts, friend walls, and post interactions
+ * Manages streak tracking, daily photos calendar, and user profile (Locket-style)
  */
 
 import { useState, useEffect } from 'react';
-import { Post } from '../../../domain/models';
-import { postRepository } from '../../../data/repositories';
-import { GetFeedUsecase } from '../../../domain/usecases';
-
-/**
- * Wall Category - Family or Friends
- * Swift equivalent: WallCategory enum
- */
-export enum WallCategory {
-  Family = 'family',
-  Friends = 'friends',
-}
-
-/**
- * Friend Wall Model
- * Swift equivalent: FriendWall struct
- */
-export interface FriendWall {
-  id: string;
-  name: string;
-  hasNewPost: boolean;
-  category: WallCategory;
-  avatarUrl?: string;
-}
-
-// Mock friend walls (same as Swift mock data)
-const MOCK_FAMILY: FriendWall[] = [
-  { id: '1', name: 'Mom', hasNewPost: true, category: WallCategory.Family },
-  { id: '2', name: 'Dad', hasNewPost: false, category: WallCategory.Family },
-  { id: '3', name: 'Sister', hasNewPost: true, category: WallCategory.Family },
-  { id: '4', name: 'Grandpa', hasNewPost: false, category: WallCategory.Family },
-];
-
-const MOCK_FRIENDS: FriendWall[] = [
-  { id: '5', name: 'Lan', hasNewPost: true, category: WallCategory.Friends },
-  { id: '6', name: 'Minh', hasNewPost: true, category: WallCategory.Friends },
-  { id: '7', name: 'Ha', hasNewPost: false, category: WallCategory.Friends },
-  { id: '8', name: 'Tuan', hasNewPost: true, category: WallCategory.Friends },
-  { id: '9', name: 'Mai', hasNewPost: false, category: WallCategory.Friends },
-  { id: '10', name: 'Dung', hasNewPost: false, category: WallCategory.Friends },
-  { id: '11', name: 'Linh', hasNewPost: true, category: WallCategory.Friends },
-];
+import { Streak, MonthGroup, DailyPhoto, User } from '../../../domain/models';
+import { streakRepository } from '../../../data/repositories';
 
 export function useHomeVM() {
-  const [posts, setPosts] = useState<Post[]>([]);
+  const [user, setUser] = useState<User>({
+    id: 'current-user',
+    name: 'Manh Tứng',
+    email: 'user@cirarn.com',
+    username: 'manhtero',
+    createdAt: new Date(),
+  });
+  
+  const [streak, setStreak] = useState<Streak>({
+    currentStreak: 0,
+    longestStreak: 0,
+    lastPhotoDate: new Date(),
+    totalPhotos: 0,
+  });
+  
+  const [monthGroups, setMonthGroups] = useState<MonthGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [familyWalls] = useState<FriendWall[]>(MOCK_FAMILY);
-  const [friendWalls] = useState<FriendWall[]>(MOCK_FRIENDS);
-
-  const getFeedUsecase = new GetFeedUsecase(postRepository);
+  const [selectedPhoto, setSelectedPhoto] = useState<DailyPhoto | null>(null);
 
   /**
-   * Load feed posts
-   * Swift equivalent: loadPosts()
+   * Load user streak data
    */
-  const loadFeed = async () => {
+  const loadStreak = async () => {
+    try {
+      const streakData = await streakRepository.getStreak(user.id);
+      setStreak(streakData);
+    } catch (error) {
+      console.error('Error loading streak:', error);
+    }
+  };
+
+  /**
+   * Load daily photos grouped by month
+   */
+  const loadDailyPhotos = async () => {
     try {
       setLoading(true);
-      const feed = await getFeedUsecase.execute(1, 20);
-      setPosts(feed);
+      const months = await streakRepository.getDailyPhotos(user.id, 3); // Load 3 months
+      setMonthGroups(months);
     } catch (error) {
-      console.error('Error loading feed:', error);
+      console.error('Error loading daily photos:', error);
     } finally {
       setLoading(false);
     }
   };
 
   /**
-   * Refresh feed (pull to refresh)
-   * Swift equivalent: refresh()
+   * Refresh all data (pull to refresh)
    */
-  const refreshFeed = async () => {
+  const refreshData = async () => {
     try {
       setRefreshing(true);
-      const feed = await getFeedUsecase.execute(1, 20);
-      setPosts(feed);
+      await Promise.all([loadStreak(), loadDailyPhotos()]);
     } catch (error) {
-      console.error('Error refreshing feed:', error);
+      console.error('Error refreshing data:', error);
     } finally {
       setRefreshing(false);
     }
   };
 
   /**
-   * Like/unlike a post
-   * Swift equivalent: likePost()
+   * Handle photo selection
    */
-  const likePost = (postId: string) => {
-    setPosts(prev =>
-      prev.map(post =>
-        post.id === postId
-          ? {
-              ...post,
-              isLiked: !post.isLiked,
-              likeCount: post.isLiked ? post.likeCount - 1 : post.likeCount + 1,
-            }
-          : post,
-      ),
-    );
+  const handlePhotoPress = (dailyPhoto: DailyPhoto) => {
+    setSelectedPhoto(dailyPhoto);
+    // TODO: Navigate to photo detail screen or show modal
+    console.log('Selected photo:', dailyPhoto);
   };
 
   /**
-   * Load more posts (pagination)
-   * Swift equivalent: loadMore()
+   * Load more months (pagination)
    */
-  const loadMore = async () => {
-    // TODO: Implement pagination
-    console.log('Load more posts...');
+  const loadMoreMonths = async () => {
+    try {
+      const currentMonthCount = monthGroups.length;
+      const moreMonths = await streakRepository.getDailyPhotos(user.id, currentMonthCount + 2);
+      setMonthGroups(moreMonths);
+    } catch (error) {
+      console.error('Error loading more months:', error);
+    }
   };
 
+  // Initial load
   useEffect(() => {
-    loadFeed();
+    loadStreak();
+    loadDailyPhotos();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return {
     // State
-    posts,
+    user,
+    streak,
+    monthGroups,
     loading,
     refreshing,
-    familyWalls,
-    friendWalls,
+    selectedPhoto,
     
     // Actions
-    refreshFeed,
-    likePost,
-    loadMore,
+    refreshData,
+    handlePhotoPress,
+    loadMoreMonths,
+    setUser,
   };
 }
+

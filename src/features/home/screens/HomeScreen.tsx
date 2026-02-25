@@ -1,70 +1,112 @@
+/**
+ * HomeScreen.tsx
+ * Locket-style home screen with streak tracking and calendar photo grid
+ */
+
 import React from 'react';
 import {
   View,
-  Text,
-  FlatList,
+  ScrollView,
   StyleSheet,
   RefreshControl,
-  ScrollView,
+  Text,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { HomeStackParamList } from '../../../app/navigation/types';
 import { useHomeVM } from '../viewModel/useHomeVM';
-import { PostCard } from '../components/PostCard';
-import { FriendWallItem } from '../components/FriendWallItem';
-import { Button } from '../../../core/ui';
+import { StreakHeader } from '../components/StreakHeader';
+import { CalendarGrid } from '../components/CalendarGrid';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'HomeScreen'>;
 
 export function HomeScreen({ navigation }: Props) {
-  const { posts, loading, refreshing, refreshFeed } = useHomeVM();
+  const {
+    user,
+    streak,
+    monthGroups,
+    loading,
+    refreshing,
+    refreshData,
+    handlePhotoPress,
+    loadMoreMonths,
+  } = useHomeVM();
 
-  const renderFriendsWall = () => (
-    <View style={styles.friendsWall}>
-      <Text style={styles.sectionTitle}>Friends</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        {['Alice', 'Bob', 'Charlie', 'Diana', 'Eve'].map((name, index) => (
-          <FriendWallItem
-            key={index}
-            userName={name}
-            photoUri={`https://i.pravatar.cc/150?img=${index + 1}`}
-            onPress={() => console.log(`Tapped on ${name}`)}
-          />
-        ))}
-      </ScrollView>
-    </View>
-  );
+  const handleSettingsPress = () => {
+    console.log('Settings pressed');
+    // TODO: Navigate to settings screen
+  };
+
+  const handleNotificationsPress = () => {
+    console.log('Notifications pressed');
+    // TODO: Navigate to notifications screen
+  };
+
+  const handleFriendsPress = () => {
+    console.log('Friends pressed');
+    // TODO: Navigate to friends screen
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Cirarn</Text>
-        <Button
-          title="Subscribe"
-          onPress={() => navigation.navigate('SubscriptionScreen')}
-          variant="outline"
-          style={styles.subscribeButton}
-        />
-      </View>
-
-      <FlatList
-        data={posts}
-        keyExtractor={item => item.id}
-        renderItem={({ item }) => <PostCard post={item} />}
-        contentContainerStyle={styles.content}
-        ListHeaderComponent={renderFriendsWall}
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={refreshFeed} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={refreshData}
+            tintColor="#FFD700"
+            colors={['#FFD700']}
+          />
         }
-        ListEmptyComponent={
-          <View style={styles.empty}>
+        onScrollEndDrag={(e) => {
+          const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+          const distanceFromBottom = contentSize.height - layoutMeasurement.height - contentOffset.y;
+          
+          // Load more when near bottom
+          if (distanceFromBottom < 300) {
+            loadMoreMonths();
+          }
+        }}
+      >
+        {/* Header with Streak Stats */}
+        <StreakHeader
+          user={user}
+          streak={streak}
+          onSettingsPress={handleSettingsPress}
+          onNotificationsPress={handleNotificationsPress}
+          onFriendsPress={handleFriendsPress}
+        />
+
+        {/* Calendar Grid Section */}
+        {loading && monthGroups.length === 0 ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#FFD700" />
+            <Text style={styles.loadingText}>Loading your memories...</Text>
+          </View>
+        ) : (
+          <View style={styles.calendarSection}>
+            <CalendarGrid
+              monthGroups={monthGroups}
+              onPhotoPress={handlePhotoPress}
+            />
+          </View>
+        )}
+
+        {/* Empty State */}
+        {!loading && monthGroups.length === 0 && (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyIcon}>📸</Text>
+            <Text style={styles.emptyTitle}>Start Your Streak!</Text>
             <Text style={styles.emptyText}>
-              {loading ? 'Loading...' : 'No posts yet'}
+              Capture your first moment and begin your daily photo journey
             </Text>
           </View>
-        }
-      />
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -72,46 +114,52 @@ export function HomeScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#000000', // Black background like Locket
   },
-  header: {
-    flexDirection: 'row',
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
+  calendarSection: {
+    paddingTop: 16,
+    paddingBottom: 32,
+  },
+  loadingContainer: {
+    flex: 1,
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    justifyContent: 'center',
+    paddingVertical: 60,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#007AFF',
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#8E8E93',
   },
-  subscribeButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    minHeight: 32,
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 80,
+    paddingHorizontal: 32,
   },
-  content: {
-    padding: 16,
-  },
-  friendsWall: {
+  emptyIcon: {
+    fontSize: 64,
     marginBottom: 16,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#000',
+  emptyTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#FFFFFF',
     marginBottom: 12,
-  },
-  empty: {
-    padding: 32,
-    alignItems: 'center',
+    textAlign: 'center',
   },
   emptyText: {
     fontSize: 16,
-    color: '#666',
+    color: '#8E8E93',
+    textAlign: 'center',
+    lineHeight: 24,
   },
 });
+

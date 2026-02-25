@@ -6,6 +6,30 @@
 import { Streak, DailyPhoto, MonthGroup, Photo } from '../../domain/models';
 import { StreakRepository } from '../../domain/repositories';
 
+// Mock captions for demo (Locket-style)
+const MOCK_CAPTIONS = [
+  '😋',
+  'Ôi Không 😭😭💔',
+  'Chill 🍃',
+  'Ngon quá 🤤',
+  'Đi chơi nè 🎉',
+  'Buổi sáng đẹp ☀️',
+  undefined,
+  '🥰',
+  undefined,
+  'Học bài 📚',
+  undefined,
+  'Cuối tuần vui 🎶',
+  undefined,
+  '😊',
+  undefined,
+  'Trà sữa 🧋',
+  undefined,
+  undefined,
+  'Workout 💪',
+  undefined,
+];
+
 // Mock data generator for demo
 function generateMockDailyPhotos(): DailyPhoto[] {
   const dailyPhotos: DailyPhoto[] = [];
@@ -15,23 +39,34 @@ function generateMockDailyPhotos(): DailyPhoto[] {
   for (let i = 0; i < 37; i++) {
     const date = new Date(today);
     date.setDate(date.getDate() - i);
-    date.setHours(14, 22, 0, 0); // Set to 14:22 like screenshot
     
     // Some days have multiple photos (1-3 photos per day)
     const photoCount = Math.floor(Math.random() * 3) + 1;
     const photos: Photo[] = [];
     
     for (let j = 0; j < photoCount; j++) {
+      // Give each photo a realistic unique time
+      const hour = 8 + Math.floor(Math.random() * 14); // 08:00 - 22:00
+      const minute = Math.floor(Math.random() * 60);
+      const photoDate = new Date(date);
+      photoDate.setHours(hour, minute, 0, 0);
+
+      const caption = MOCK_CAPTIONS[(i * 3 + j) % MOCK_CAPTIONS.length];
+
       photos.push({
         id: `photo-${i}-${j}`,
-        createdAt: date,
-        imageData: `https://picsum.photos/400/400?random=${i * 10 + j}`,
+        createdAt: photoDate,
+        imageData: `https://picsum.photos/800/800?random=${i * 10 + j}`,
         thumbnailData: `https://picsum.photos/200/200?random=${i * 10 + j}`,
+        message: caption,
         userId: 'current-user',
         hasVoice: Math.random() > 0.7, // 30% have voice notes
         hasLivePhoto: false,
       });
     }
+
+    // Sort photos by time within the day
+    photos.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
     
     dailyPhotos.push({
       id: `daily-${i}`,

@@ -12,6 +12,11 @@ export type RootTabsParamList = {
 export type HomeStackParamList = {
   HomeScreen: undefined;
   SubscriptionScreen: undefined;
+  DailyPhotoDetailScreen: {
+    photos: any[]; // Serialized Photo[]
+    dateString: string; // ISO date string
+    initialIndex?: number;
+  };
 };
 
 // Camera Stack Navigator

@@ -18,6 +18,7 @@ import type { HomeStackParamList } from '../../../app/navigation/types';
 import { useHomeVM } from '../viewModel/useHomeVM';
 import { StreakHeader } from '../components/StreakHeader';
 import { CalendarGrid } from '../components/CalendarGrid';
+import type { DailyPhoto } from '../../../domain/models';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'HomeScreen'>;
 
@@ -29,7 +30,6 @@ export function HomeScreen({ navigation }: Props) {
     loading,
     refreshing,
     refreshData,
-    handlePhotoPress,
     loadMoreMonths,
   } = useHomeVM();
 
@@ -39,17 +39,35 @@ export function HomeScreen({ navigation }: Props) {
 
   const handleSettingsPress = () => {
     console.log('Settings pressed');
-    // TODO: Navigate to settings screen
   };
 
   const handleNotificationsPress = () => {
     console.log('Notifications pressed');
-    // TODO: Navigate to notifications screen
   };
 
   const handleFriendsPress = () => {
     console.log('Friends pressed');
-    // TODO: Navigate to friends screen
+  };
+
+  /**
+   * Navigate to fullscreen photo detail (Locket-style)
+   */
+  const handlePhotoPress = (dailyPhoto: DailyPhoto) => {
+    // Serialize photos for navigation params
+    const serializedPhotos = dailyPhoto.photos.map(p => ({
+      ...p,
+      createdAt: p.createdAt instanceof Date
+        ? p.createdAt.toISOString()
+        : p.createdAt,
+    }));
+
+    navigation.navigate('DailyPhotoDetailScreen', {
+      photos: serializedPhotos,
+      dateString: dailyPhoto.date instanceof Date
+        ? dailyPhoto.date.toISOString()
+        : dailyPhoto.date,
+      initialIndex: 0,
+    });
   };
 
   return (

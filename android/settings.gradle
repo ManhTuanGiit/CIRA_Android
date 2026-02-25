@@ -2,5 +2,14 @@ pluginManagement { includeBuild("../node_modules/@react-native/gradle-plugin") }
 plugins { id("com.facebook.react.settings") }
 extensions.configure(com.facebook.react.ReactSettingsExtension){ ex -> ex.autolinkLibrariesFromCommand() }
 rootProject.name = 'cirarn'
+
+// Manually include react-native-nitro-modules (required by react-native-audio-recorder-player)
+include ':react-native-nitro-modules'
+project(':react-native-nitro-modules').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-nitro-modules/android')
+
+// Manually include react-native-worklets (required by react-native-reanimated)
+include ':react-native-worklets'
+project(':react-native-worklets').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-worklets/android')
+
 include ':app'
 includeBuild('../node_modules/@react-native/gradle-plugin')

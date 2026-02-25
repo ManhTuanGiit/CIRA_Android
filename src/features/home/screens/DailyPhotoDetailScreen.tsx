@@ -52,6 +52,40 @@ function formatTime(date: Date): string {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Memoised Thumbnail – stays mounted so its Image never goes black  */
+/* ------------------------------------------------------------------ */
+
+interface ThumbItemProps {
+  uri: string | undefined;
+  isSelected: boolean;
+  onPress: () => void;
+}
+
+const ThumbItem = React.memo(
+  function ThumbItem({ uri, isSelected, onPress }: ThumbItemProps) {
+    return (
+      <TouchableOpacity
+        style={[styles.thumbItem, isSelected && styles.thumbItemSelected]}
+        onPress={onPress}
+        activeOpacity={0.7}
+      >
+        {uri ? (
+          <Image source={{ uri }} style={styles.thumbImage} resizeMode="cover" />
+        ) : (
+          <View style={styles.thumbPlaceholder}>
+            <Text style={styles.thumbPlaceholderText}>📷</Text>
+          </View>
+        )}
+      </TouchableOpacity>
+    );
+  },
+  // Custom comparator – only re-render when `isSelected` flips
+  (prev, next) =>
+    prev.isSelected === next.isSelected &&
+    prev.uri === next.uri,
+);
+
+/* ------------------------------------------------------------------ */
 
 export function DailyPhotoDetailScreen({ navigation, route }: Props) {
   const { photos, dateString, initialIndex } = route.params;
@@ -69,9 +103,13 @@ export function DailyPhotoDetailScreen({ navigation, route }: Props) {
   const startIdx = initialIndex ?? 0;
   const [selectedIndex, setSelectedIndex] = useState(startIdx);
 
-  // Refs for syncing the two FlatLists
+  // Refs for syncing the two lists
   const mainListRef = useRef<FlatList>(null);
   const thumbListRef = useRef<FlatList>(null);
+
+  // Use a ref so callbacks that read selectedIndex don't recreate
+  const selectedIndexRef = useRef(startIdx);
+  selectedIndexRef.current = selectedIndex;
 
   // ---- derived values for the currently selected photo ----
   const selectedPhoto = photoList[selectedIndex];
@@ -82,22 +120,23 @@ export function DailyPhotoDetailScreen({ navigation, route }: Props) {
 
   // ======================== HANDLERS ========================
 
-  const handleClose = () => navigation.goBack();
+  const handleClose = useCallback(() => navigation.goBack(), [navigation]);
 
-  const handleShare = () => {
+  const handleShare = useCallback(() => {
     // TODO: share implementation
-    console.log('Share photo:', selectedPhoto?.id);
-  };
+    console.log('Share photo');
+  }, []);
 
   /**
-   * Called when the main paging FlatList settles on a new page (swipe)
+   * Called when the main paging FlatList settles on a new page (swipe).
+   * Has ZERO deps so it never recreates → safe for FlatList's
+   * onViewableItemsChanged which can't change after mount.
    */
   const onViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
       if (viewableItems.length > 0 && viewableItems[0].index != null) {
         const newIndex = viewableItems[0].index;
         setSelectedIndex(newIndex);
-        // Scroll thumbnail strip to keep it centered
         thumbListRef.current?.scrollToIndex({
           index: newIndex,
           animated: true,
@@ -111,25 +150,20 @@ export function DailyPhotoDetailScreen({ navigation, route }: Props) {
   const viewabilityConfig = useRef({ viewAreaCoveragePercentThreshold: 50 }).current;
 
   /**
-   * Called when a thumbnail is tapped
+   * Stable handler for thumbnail tap – reads index from the ref, not
+   * from a closure, so no dependency on selectedIndex.
    */
-  const handleSelectPhoto = useCallback(
-    (index: number) => {
-      if (index === selectedIndex) { return; }
-      setSelectedIndex(index);
+  const handleSelectPhoto = useCallback((index: number) => {
+    if (index === selectedIndexRef.current) { return; }
+    setSelectedIndex(index);
 
-      // Scroll main FlatList to the tapped photo
-      mainListRef.current?.scrollToIndex({ index, animated: true });
-
-      // Center thumbnail
-      thumbListRef.current?.scrollToIndex({
-        index,
-        animated: true,
-        viewPosition: 0.5,
-      });
-    },
-    [selectedIndex],
-  );
+    mainListRef.current?.scrollToIndex({ index, animated: true });
+    thumbListRef.current?.scrollToIndex({
+      index,
+      animated: true,
+      viewPosition: 0.5,
+    });
+  }, []);
 
   // ======================== RENDER ITEMS ========================
 
@@ -150,7 +184,6 @@ export function DailyPhotoDetailScreen({ navigation, route }: Props) {
               </View>
             )}
 
-            {/* Caption overlay at bottom */}
             {photoCaption ? (
               <View style={styles.captionOverlay}>
                 <Text style={styles.captionText}>{photoCaption}</Text>
@@ -163,28 +196,24 @@ export function DailyPhotoDetailScreen({ navigation, route }: Props) {
     [],
   );
 
-  /** Render a thumbnail in the bottom strip */
+  /**
+   * Render thumbnail – delegates to the memoised <ThumbItem>.
+   * This function itself is stable (no deps that change), so FlatList
+   * never unmounts / remounts the cells.
+   */
   const renderThumbnail = useCallback(
     ({ item, index }: ListRenderItemInfo<Photo>) => {
-      const isSelected = index === selectedIndex;
       const thumbUri = item.thumbnailData || item.imageData;
-
       return (
-        <TouchableOpacity
-          style={[styles.thumbItem, isSelected && styles.thumbItemSelected]}
+        <ThumbItem
+          uri={thumbUri}
+          isSelected={index === selectedIndex}
           onPress={() => handleSelectPhoto(index)}
-          activeOpacity={0.7}
-        >
-          {thumbUri ? (
-            <Image source={{ uri: thumbUri }} style={styles.thumbImage} resizeMode="cover" />
-          ) : (
-            <View style={styles.thumbPlaceholder}>
-              <Text style={styles.thumbPlaceholderText}>📷</Text>
-            </View>
-          )}
-        </TouchableOpacity>
+        />
       );
     },
+    // selectedIndex IS a dep here, but the ThumbItem memo comparator
+    // prevents images from unmounting – only the border re-renders.
     [selectedIndex, handleSelectPhoto],
   );
 
@@ -245,9 +274,7 @@ export function DailyPhotoDetailScreen({ navigation, route }: Props) {
           viewabilityConfig={viewabilityConfig}
           bounces={false}
           overScrollMode="never"
-          decelerationRate="fast"
-          snapToInterval={PHOTO_SIZE}
-          snapToAlignment="start"
+          removeClippedSubviews={false}
           style={styles.mainList}
         />
       </View>
@@ -265,13 +292,15 @@ export function DailyPhotoDetailScreen({ navigation, route }: Props) {
             ref={thumbListRef}
             data={photoList}
             renderItem={renderThumbnail}
-            keyExtractor={(item, idx) => item.id || `thumb-${idx}`}
+            keyExtractor={(item) => item.id}
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.thumbnailContent}
             initialScrollIndex={startIdx > 2 ? startIdx - 2 : 0}
             getItemLayout={getThumbItemLayout}
             extraData={selectedIndex}
+            removeClippedSubviews={false}
+            windowSize={21}
           />
         </View>
       )}

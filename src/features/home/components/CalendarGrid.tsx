@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, TouchableOpacity } from 'react-native';
 import { MonthGroup, DailyPhoto } from '../../../domain/models';
 import { DailyPhotoItem } from './DailyPhotoItem';
 
@@ -14,60 +14,96 @@ const GAP = 8;
 const COLUMNS = 7;
 const ITEM_WIDTH = (SCREEN_WIDTH - GRID_PADDING - (GAP * (COLUMNS - 1))) / COLUMNS;
 
+// Sentinel value used to identify the "+" add-photo cell inside the grid
+const ADD_BUTTON_SENTINEL = '__ADD_BUTTON__';
+
+type GridCell = DailyPhoto | null | typeof ADD_BUTTON_SENTINEL;
+
 interface CalendarGridProps {
   monthGroups: MonthGroup[];
   onPhotoPress?: (dailyPhoto: DailyPhoto) => void;
+  onAddPress?: () => void;
   selectedPhotoId?: string;
 }
 
 export const CalendarGrid: React.FC<CalendarGridProps> = ({
   monthGroups,
   onPhotoPress,
+  onAddPress,
   selectedPhotoId,
 }) => {
-  // Fill empty slots to complete grid (7 columns)
-  const fillGridRow = (photos: DailyPhoto[]): (DailyPhoto | null)[] => {
-    const filled: (DailyPhoto | null)[] = [...photos];
-    const remainder = photos.length % 7;
+  /**
+   * Build a flat array of cells for the grid:
+   *   [ ...photos, ADD_BUTTON, null, null, ... ]
+   * The "+" sits right after the last photo; nulls pad to complete the row.
+   */
+  const buildGridCells = (photos: DailyPhoto[]): GridCell[] => {
+    const cells: GridCell[] = [...photos, ADD_BUTTON_SENTINEL];
+    const remainder = cells.length % COLUMNS;
     if (remainder !== 0) {
-      const emptySlots = 7 - remainder;
-      for (let i = 0; i < emptySlots; i++) {
-        filled.push(null);
+      const pad = COLUMNS - remainder;
+      for (let i = 0; i < pad; i++) {
+        cells.push(null);
       }
     }
-    return filled;
+    return cells;
   };
 
   return (
     <View style={styles.container}>
-      {monthGroups.map((monthGroup) => (
-        <View key={monthGroup.monthKey} style={styles.monthSection}>
-          {/* Month Header */}
-          <Text style={styles.monthTitle}>{monthGroup.monthDisplay}</Text>
-          
-          {/* Photo Grid */}
-          <View style={styles.grid}>
-            {fillGridRow(monthGroup.dailyPhotos).map((dailyPhoto, index) => (
-              <View key={dailyPhoto?.id || `empty-${index}`} style={styles.gridItem}>
-                <DailyPhotoItem
-                  dailyPhoto={dailyPhoto}
-                  onPress={onPhotoPress}
-                  isSelected={dailyPhoto?.id === selectedPhotoId}
-                />
-              </View>
-            ))}
-          </View>
+      {monthGroups.map((monthGroup) => {
+        const cells = buildGridCells(monthGroup.dailyPhotos);
 
-          {/* Add Photo Button - Always at the end of each month */}
-          <View style={styles.grid}>
-            <View style={styles.gridItem}>
-              <View style={styles.addButton}>
-                <Text style={styles.addIcon}>+</Text>
-              </View>
+        return (
+          <View key={monthGroup.monthKey} style={styles.monthSection}>
+            {/* Month Header */}
+            <Text style={styles.monthTitle}>{monthGroup.monthDisplay}</Text>
+
+            {/* Photo Grid (photos + "+" all in one flow) */}
+            <View style={styles.grid}>
+              {cells.map((cell, index) => {
+                // ---- Add-photo button ----
+                if (cell === ADD_BUTTON_SENTINEL) {
+                  return (
+                    <View
+                      key={`add-${monthGroup.monthKey}`}
+                      style={styles.gridItem}
+                    >
+                      <TouchableOpacity
+                        style={styles.addButton}
+                        onPress={onAddPress}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.addIcon}>+</Text>
+                      </TouchableOpacity>
+                    </View>
+                  );
+                }
+
+                // ---- Empty padding slot ----
+                if (cell === null) {
+                  return (
+                    <View key={`empty-${monthGroup.monthKey}-${index}`} style={styles.gridItem}>
+                      <View style={styles.emptySlot} />
+                    </View>
+                  );
+                }
+
+                // ---- Normal photo cell ----
+                return (
+                  <View key={cell.id} style={styles.gridItem}>
+                    <DailyPhotoItem
+                      dailyPhoto={cell}
+                      onPress={onPhotoPress}
+                      isSelected={cell.id === selectedPhotoId}
+                    />
+                  </View>
+                );
+              })}
             </View>
           </View>
-        </View>
-      ))}
+        );
+      })}
     </View>
   );
 };
@@ -94,6 +130,12 @@ const styles = StyleSheet.create({
   gridItem: {
     width: ITEM_WIDTH,
     height: ITEM_WIDTH,
+  },
+  emptySlot: {
+    width: '100%',
+    aspectRatio: 1,
+    borderRadius: 12,
+    backgroundColor: 'transparent',
   },
   addButton: {
     width: '100%',

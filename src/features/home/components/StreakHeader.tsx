@@ -10,6 +10,7 @@ import { Streak, User } from '../../../domain/models';
 interface StreakHeaderProps {
   user: User;
   streak: Streak;
+  onSubscriptionPress?: () => void;
   onSettingsPress?: () => void;
   onNotificationsPress?: () => void;
   onFriendsPress?: () => void;
@@ -18,6 +19,7 @@ interface StreakHeaderProps {
 export const StreakHeader: React.FC<StreakHeaderProps> = ({
   user,
   streak,
+  onSubscriptionPress,
   onSettingsPress,
   onNotificationsPress,
   onFriendsPress,
@@ -26,12 +28,19 @@ export const StreakHeader: React.FC<StreakHeaderProps> = ({
     <View style={styles.container}>
       {/* Top Bar with Streak Badge & Icons */}
       <View style={styles.topBar}>
-        <TouchableOpacity style={styles.streakBadge}>
-          <Text style={styles.streakText}>Thử Locket Gold</Text>
+        <TouchableOpacity 
+          style={styles.streakBadge}
+          onPress={onSubscriptionPress}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.streakText}>Subscription</Text>
         </TouchableOpacity>
-        
+
         <View style={styles.iconRow}>
-          <TouchableOpacity onPress={onNotificationsPress} style={styles.iconButton}>
+          <TouchableOpacity
+            onPress={onNotificationsPress}
+            style={styles.iconButton}
+          >
             <Text style={styles.icon}>🔔</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={onFriendsPress} style={styles.iconButton}>
@@ -49,7 +58,7 @@ export const StreakHeader: React.FC<StreakHeaderProps> = ({
           <Text style={styles.displayName}>{user.name || 'User'}</Text>
           <Text style={styles.username}>@{user.username}</Text>
         </View>
-        
+
         {/* Avatar with Gold Border */}
         <View style={styles.avatarContainer}>
           {user.avatar ? (
@@ -72,12 +81,10 @@ export const StreakHeader: React.FC<StreakHeaderProps> = ({
             {streak.totalPhotos.toLocaleString()} Locket
           </Text>
         </View>
-        
+
         <View style={styles.statItem}>
           <Text style={styles.statIcon}>🔥</Text>
-          <Text style={styles.statText}>
-            {streak.currentStreak}d chuỗi
-          </Text>
+          <Text style={styles.statText}>{streak.currentStreak}d chuỗi</Text>
         </View>
       </View>
     </View>

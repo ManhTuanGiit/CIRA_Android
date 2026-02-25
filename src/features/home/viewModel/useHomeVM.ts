@@ -17,6 +17,7 @@ export function useHomeVM() {
     email: 'user@cirarn.com',
     username: 'manhtero',
     createdAt: new Date(),
+    subscription: 'free', // Default to free tier
   });
   
   const [streak, setStreak] = useState<Streak>({

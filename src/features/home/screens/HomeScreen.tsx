@@ -33,6 +33,10 @@ export function HomeScreen({ navigation }: Props) {
     loadMoreMonths,
   } = useHomeVM();
 
+  const handleSubscriptionPress = () => {
+    navigation.navigate('SubscriptionScreen');
+  };
+
   const handleSettingsPress = () => {
     console.log('Settings pressed');
     // TODO: Navigate to settings screen
@@ -76,6 +80,7 @@ export function HomeScreen({ navigation }: Props) {
         <StreakHeader
           user={user}
           streak={streak}
+          onSubscriptionPress={handleSubscriptionPress}
           onSettingsPress={handleSettingsPress}
           onNotificationsPress={handleNotificationsPress}
           onFriendsPress={handleFriendsPress}

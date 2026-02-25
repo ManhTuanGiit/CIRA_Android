@@ -114,6 +114,22 @@ export interface Author {
 }
 
 /**
+ * Subscription Plan Types
+ */
+export type SubscriptionTier = 'free' | 'personal' | 'family' | 'premium';
+
+export interface SubscriptionPlan {
+  id: SubscriptionTier;
+  name: string;
+  price: string;
+  pricePerMonth?: number; // In VND
+  features: string[];
+  isPopular?: boolean;
+  aiStories?: number;
+  photoLimit?: number; // undefined = unlimited
+}
+
+/**
  * User model - represents app user
  */
 export interface User {
@@ -124,6 +140,7 @@ export interface User {
   avatar?: string;
   bio?: string;
   createdAt: Date;
+  subscription?: SubscriptionTier; // Current subscription tier
 }
 
 /**

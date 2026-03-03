@@ -1,29 +1,12 @@
-export interface Photo {
-  id: string;
-  uri: string;
-  width: number;
-  height: number;
-  created_at: string;
-  user_id: string;
-  chapter_id?: string;
-}
+/**
+ * Database schema exports
+ * All types are now sourced from Supabase
+ * 
+ * @deprecated - Use models from domain/models instead
+ * This file is kept for backward compatibility
+ */
 
-export interface Chapter {
-  id: string;
-  title: string;
-  description?: string;
-  cover_image_uri?: string;
-  photo_count: number;
-  created_at: string;
-  updated_at: string;
-  user_id: string;
-}
+export * from '../types';
 
-export interface Post {
-  id: string;
-  user_id: string;
-  photo_uri: string;
-  voice_note_uri?: string;
-  caption?: string;
-  created_at: string;
-}
+// Re-export commonly used types
+export type { Database } from '../types';

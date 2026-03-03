@@ -3,7 +3,7 @@
  * Implementation of StreakRepository with mock data
  */
 
-import { Streak, DailyPhoto, MonthGroup, Photo } from '../../domain/models';
+import { Streak, DailyPhoto, MonthGroup, Post } from '../../domain/models';
 import { StreakRepository } from '../../domain/repositories';
 
 // Mock captions for demo (Locket-style)
@@ -42,7 +42,7 @@ function generateMockDailyPhotos(): DailyPhoto[] {
     
     // Some days have multiple photos (1-3 photos per day)
     const photoCount = Math.floor(Math.random() * 3) + 1;
-    const photos: Photo[] = [];
+    const posts: Post[] = [];
     
     for (let j = 0; j < photoCount; j++) {
       // Give each photo a realistic unique time
@@ -53,28 +53,34 @@ function generateMockDailyPhotos(): DailyPhoto[] {
 
       const caption = MOCK_CAPTIONS[(i * 3 + j) % MOCK_CAPTIONS.length];
 
-      photos.push({
+      posts.push({
         id: `photo-${i}-${j}`,
-        createdAt: photoDate,
-        imageData: `https://picsum.photos/800/800?random=${i * 10 + j}`,
-        thumbnailData: `https://picsum.photos/200/200?random=${i * 10 + j}`,
+        owner_id: 'current-user',
         message: caption,
-        userId: 'current-user',
-        hasVoice: Math.random() > 0.7, // 30% have voice notes
-        hasLivePhoto: false,
+        image_path: `https://picsum.photos/800/800?random=${i * 10 + j}`,
+        voice_url: Math.random() > 0.7 ? 'voice-note-url' : undefined,
+        visibility: 'friends',
+        sync_status: 'synced',
+        is_active: true,
+        view_count: Math.floor(Math.random() * 100),
+        like_count: Math.floor(Math.random() * 50),
+        share_count: 0,
+        comment_count: Math.floor(Math.random() * 10),
+        created_at: photoDate,
+        updated_at: photoDate,
       });
     }
 
-    // Sort photos by time within the day
-    photos.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    // Sort posts by time within the day
+    posts.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
     
     dailyPhotos.push({
       id: `daily-${i}`,
       date,
-      photos,
-      thumbnailUrl: photos[0].thumbnailData,
-      photoCount: photos.length,
-      hasVoice: photos.some(p => p.hasVoice),
+      posts,
+      thumbnailUrl: posts[0].image_path,
+      photoCount: posts.length,
+      hasVoice: posts.some(p => !!p.voice_url),
     });
   }
   

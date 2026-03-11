@@ -18,6 +18,7 @@
     "@shopify/flash-list": "^2.2.0",
     "@supabase/supabase-js": "^2.98.0",
     "@types/react-native-dotenv": "^0.2.2",
+    "@types/react-native-vector-icons": "^6.4.18",
     "react": "19.2.0",
     "react-native": "0.83.1",
     "react-native-audio-recorder-player": "^4.5.0",
@@ -29,6 +30,8 @@
     "react-native-reanimated": "^4.2.1",
     "react-native-safe-area-context": "^5.6.2",
     "react-native-screens": "^4.20.0",
+    "react-native-url-polyfill": "^3.0.0",
+    "react-native-vector-icons": "^10.3.0",
     "react-native-vision-camera": "^4.7.3"
   },
   "devDependencies": {

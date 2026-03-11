@@ -14,9 +14,9 @@ export const ChapterCard: React.FC<ChapterCardProps> = ({
   return (
     <TouchableOpacity style={styles.container} onPress={onPress}>
       <View style={styles.coverContainer}>
-        {chapter.coverImageUri ? (
+        {chapter.cover_image_path ? (
           <Image
-            source={{ uri: chapter.coverImageUri }}
+            source={{ uri: chapter.cover_image_path }}
             style={styles.cover}
           />
         ) : (
@@ -27,14 +27,14 @@ export const ChapterCard: React.FC<ChapterCardProps> = ({
       </View>
       <View style={styles.info}>
         <Text style={styles.title} numberOfLines={2}>
-          {chapter.title}
+          {chapter.name}
         </Text>
         {chapter.description && (
           <Text style={styles.description} numberOfLines={1}>
             {chapter.description}
           </Text>
         )}
-        <Text style={styles.photoCount}>{chapter.photoCount} photos</Text>
+        <Text style={styles.photoCount}>{chapter.item_count} photos</Text>
       </View>
     </TouchableOpacity>
   );

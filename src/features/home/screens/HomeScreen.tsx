@@ -54,11 +54,11 @@ export function HomeScreen({ navigation }: Props) {
    */
   const handlePhotoPress = (dailyPhoto: DailyPhoto) => {
     // Serialize photos for navigation params
-    const serializedPhotos = dailyPhoto.photos.map(p => ({
+    const serializedPhotos = dailyPhoto.posts.map((p) => ({
       ...p,
-      createdAt: p.createdAt instanceof Date
-        ? p.createdAt.toISOString()
-        : p.createdAt,
+      created_at: p.created_at instanceof Date
+        ? p.created_at.toISOString()
+        : p.created_at,
     }));
 
     navigation.navigate('DailyPhotoDetailScreen', {

@@ -26,6 +26,10 @@ export interface CameraPermissionStatus {
   microphone: boolean;
 }
 
+function toRecordFlashMode(mode: FlashMode): 'off' | 'on' {
+  return mode === 'on' ? 'on' : 'off';
+}
+
 class CameraManager {
   private camera: Camera | null = null;
   private isRecordingVideo = false;
@@ -87,7 +91,7 @@ class CameraManager {
         try {
           console.log('📷 Starting Live Photo video recording...');
           await camera.startRecording({
-            flash: this.flashMode,
+            flash: toRecordFlashMode(this.flashMode),
             onRecordingFinished: (video) => {
               videoFile = video;
               console.log('✅ Live Photo video recorded:', video.path);
@@ -98,7 +102,7 @@ class CameraManager {
           });
           
           // Wait a bit to capture some video frames (1-2 seconds)
-          await new Promise(resolve => setTimeout(resolve, 1500));
+          await new Promise<void>(resolve => setTimeout(() => resolve(), 1500));
           
           // Stop recording
           await camera.stopRecording();

@@ -95,7 +95,7 @@ export function DailyPhotoDetailScreen({ navigation, route }: Props) {
     () =>
       photos.map((p: any) => ({
         ...p,
-        createdAt: new Date(p.createdAt),
+        created_at: new Date(p.created_at),
       })),
     [photos],
   );
@@ -114,9 +114,9 @@ export function DailyPhotoDetailScreen({ navigation, route }: Props) {
   // ---- derived values for the currently selected photo ----
   const selectedPhoto = photoList[selectedIndex];
   const { year, dateLine } = formatDateHeader(
-    dateString ? new Date(dateString) : new Date(selectedPhoto?.createdAt ?? Date.now()),
+    dateString ? new Date(dateString) : new Date(selectedPhoto?.created_at ?? Date.now()),
   );
-  const timeStr = selectedPhoto ? formatTime(new Date(selectedPhoto.createdAt)) : '';
+  const timeStr = selectedPhoto ? formatTime(new Date(selectedPhoto.created_at)) : '';
 
   // ======================== HANDLERS ========================
 
@@ -170,7 +170,7 @@ export function DailyPhotoDetailScreen({ navigation, route }: Props) {
   /** Render a single page in the main swipeable photo area */
   const renderMainPhoto = useCallback(
     ({ item }: ListRenderItemInfo<Photo>) => {
-      const uri = item.imageData || item.thumbnailData;
+      const uri = item.image_path;
       const photoCaption = item.message;
 
       return (
@@ -203,7 +203,7 @@ export function DailyPhotoDetailScreen({ navigation, route }: Props) {
    */
   const renderThumbnail = useCallback(
     ({ item, index }: ListRenderItemInfo<Photo>) => {
-      const thumbUri = item.thumbnailData || item.imageData;
+      const thumbUri = item.image_path;
       return (
         <ThumbItem
           uri={thumbUri}

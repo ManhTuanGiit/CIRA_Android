@@ -10,19 +10,26 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { CameraStackParamList } from '../../../app/navigation/types';
 import { chapterRepository } from '../../../data/repositories';
+import { supabase } from '../../../data/storage/supabase';
+import type { Chapter } from '../../../domain/models';
 
 type Props = NativeStackScreenProps<CameraStackParamList, 'ChapterPickerSheet'>;
 
 export function ChapterPickerSheet({ navigation, route }: Props) {
   const { photoUri } = route.params;
-  const [chapters, setChapters] = React.useState<any[]>([]);
+  const [chapters, setChapters] = React.useState<Chapter[]>([]);
 
   React.useEffect(() => {
     loadChapters();
   }, []);
 
   const loadChapters = async () => {
-    const data = await chapterRepository.getChapters('current-user');
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setChapters([]);
+      return;
+    }
+    const data = await chapterRepository.getChapters(user.id);
     setChapters(data);
   };
 
@@ -51,8 +58,8 @@ export function ChapterPickerSheet({ navigation, route }: Props) {
             style={styles.chapterItem}
             onPress={() => handleSelectChapter(item.id)}
           >
-            <Text style={styles.chapterTitle}>{item.title}</Text>
-            <Text style={styles.chapterInfo}>{item.photoCount} photos</Text>
+            <Text style={styles.chapterTitle}>{item.name}</Text>
+            <Text style={styles.chapterInfo}>{item.item_count} photos</Text>
           </TouchableOpacity>
         )}
         contentContainerStyle={styles.list}

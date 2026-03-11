@@ -9,15 +9,16 @@
 import { useState, useEffect } from 'react';
 import { Streak, MonthGroup, DailyPhoto, User } from '../../../domain/models';
 import { streakRepository } from '../../../data/repositories';
+import { supabase } from '../../../data/storage/supabase';
 
 export function useHomeVM() {
   const [user, setUser] = useState<User>({
-    id: 'current-user',
+    id: '',
     name: 'Manh Tứng',
     email: 'user@cirarn.com',
     username: 'manhtero',
-    createdAt: new Date(),
-    subscription: 'free', // Default to free tier
+    is_active: true,
+    created_at: new Date(),
   });
   
   const [streak, setStreak] = useState<Streak>({
@@ -36,6 +37,7 @@ export function useHomeVM() {
    * Load user streak data
    */
   const loadStreak = async () => {
+    if (!user.id) return;
     try {
       const streakData = await streakRepository.getStreak(user.id);
       setStreak(streakData);
@@ -48,6 +50,10 @@ export function useHomeVM() {
    * Load daily photos grouped by month
    */
   const loadDailyPhotos = async () => {
+    if (!user.id) {
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       const months = await streakRepository.getDailyPhotos(user.id, 3); // Load 3 months
@@ -86,6 +92,7 @@ export function useHomeVM() {
    * Load more months (pagination)
    */
   const loadMoreMonths = async () => {
+    if (!user.id) return;
     try {
       const currentMonthCount = monthGroups.length;
       const moreMonths = await streakRepository.getDailyPhotos(user.id, currentMonthCount + 2);
@@ -95,12 +102,28 @@ export function useHomeVM() {
     }
   };
 
-  // Initial load
+  // Bootstrap authenticated user
   useEffect(() => {
+    const loadUser = async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) return;
+      setUser(prev => ({
+        ...prev,
+        id: authUser.id,
+        email: authUser.email ?? prev.email,
+        username: authUser.user_metadata?.username ?? prev.username,
+      }));
+    };
+    loadUser();
+  }, []);
+
+  // Initial data load after user is ready
+  useEffect(() => {
+    if (!user.id) return;
     loadStreak();
     loadDailyPhotos();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [user.id]);
 
   return {
     // State

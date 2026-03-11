@@ -7,7 +7,9 @@
  * Uses react-native-audio-recorder-player
  */
 
-import AudioRecorderPlayer, { PlayBackType } from 'react-native-audio-recorder-player';
+import AudioRecorderPlayer, {
+  type PlayBackType,
+} from 'react-native-audio-recorder-player';
 
 export interface PlaybackState {
   isPlaying: boolean;
@@ -17,7 +19,7 @@ export interface PlaybackState {
 }
 
 class VoicePlayer {
-  private audioRecorderPlayer: AudioRecorderPlayer;
+  private audioRecorderPlayer = AudioRecorderPlayer;
   private currentURL: string | null = null;
   private playbackState: PlaybackState = {
     isPlaying: false,
@@ -29,7 +31,7 @@ class VoicePlayer {
   private listeners: Array<(state: PlaybackState) => void> = [];
 
   constructor() {
-    this.audioRecorderPlayer = new AudioRecorderPlayer();
+    this.audioRecorderPlayer = AudioRecorderPlayer;
     this.audioRecorderPlayer.setSubscriptionDuration(0.05); // Update every 50ms
   }
 

@@ -28,7 +28,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { CameraStackParamList } from '../../../app/navigation/types';
-import type { Friend, AudienceType } from '../../../domain/models';
 import {
   CloseIcon,
   SendPlaneIcon,
@@ -45,6 +44,14 @@ const AUDIENCE_SIZE = 56;
 const SEND_BTN = 64;
 
 type Props = NativeStackScreenProps<CameraStackParamList, 'SendScreen'>;
+type AudienceFilter = 'all' | 'friends' | 'family';
+
+interface Friend {
+  id: string;
+  name: string;
+  username: string;
+  avatar?: string;
+}
 
 /* ---- Mock friends data ---- */
 const MOCK_FRIENDS: Friend[] = [
@@ -67,7 +74,7 @@ const MOCK_FAMILY: Friend[] = [
 
 export function SendScreen({ navigation, route }: Props) {
   const { photoUri } = route.params;
-  const [audience, setAudience] = useState<AudienceType>('all');
+  const [audience, setAudience] = useState<AudienceFilter>('all');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [caption, setCaption] = useState('');
   const [showCaption, setShowCaption] = useState(false);

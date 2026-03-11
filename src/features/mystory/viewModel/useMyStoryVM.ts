@@ -10,6 +10,7 @@ import { useState, useEffect } from 'react';
 import { Chapter, Photo } from '../../../domain/models';
 import { chapterRepository } from '../../../data/repositories';
 import { GetChaptersUsecase } from '../../../domain/usecases';
+import { supabase } from '../../../data/storage/supabase';
 
 export function useMyStoryVM() {
   const [chapters, setChapters] = useState<Chapter[]>([]);
@@ -26,7 +27,14 @@ export function useMyStoryVM() {
   const loadChapters = async () => {
     try {
       setLoading(true);
-      const data = await getChaptersUsecase.execute('current-user');
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setChapters([]);
+        setPhotos([]);
+        return;
+      }
+
+      const data = await getChaptersUsecase.execute(user.id);
       setChapters(data);
       
       // Load all photos from chapters
@@ -91,7 +99,7 @@ export function useMyStoryVM() {
    */
   const photoCount = photos.length;
   const chapterCount = chapters.length;
-  const voiceCount = photos.filter(p => p.hasVoice).length;
+  const voiceCount = photos.filter(p => Boolean(p.voice_url)).length;
 
   useEffect(() => {
     loadChapters();

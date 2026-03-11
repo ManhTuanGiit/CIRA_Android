@@ -61,8 +61,8 @@ export const StreakHeader: React.FC<StreakHeaderProps> = ({
 
         {/* Avatar with Gold Border */}
         <View style={styles.avatarContainer}>
-          {user.avatar ? (
-            <Image source={{ uri: user.avatar }} style={styles.avatar} />
+          {user.avatar_data ? (
+            <Image source={{ uri: user.avatar_data }} style={styles.avatar} />
           ) : (
             <View style={styles.avatarPlaceholder}>
               <Text style={styles.avatarText}>

@@ -4,11 +4,11 @@
  */
 
 import React, { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { HomeStackParamList } from '../../../app/navigation/types';
-import { Button, Card } from '../../../core/ui';
+import { Card } from '../../../core/ui';
 import type { SubscriptionPlan, SubscriptionTier } from '../../../domain/models';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'SubscriptionScreen'>;
@@ -91,7 +91,7 @@ export function SubscriptionScreen({ navigation }: Props) {
     setCurrentPlan(planId);
     
     // Show success message or navigate to payment
-    alert(`Đã chọn gói ${plans.find(p => p.id === planId)?.name}!`);
+    Alert.alert('Thành công', `Đã chọn gói ${plans.find(p => p.id === planId)?.name}!`);
   };
 
   const isCurrentPlan = (planId: SubscriptionTier) => planId === currentPlan;

@@ -1,18 +1,18 @@
 /**
  * CameraScreen.tsx
- * Locket-style camera screen — matches Locket's actual UI.
+ * Locket-style camera screen — matches the Cirarn iOS UI.
  *
  * Layout (top → bottom):
- *   1. Header row: avatar | friend count pill | chat icon
- *   2. Camera viewfinder (large rounded rect, nearly full width)
+ *   1. Header row: chat icon | "Kết nối N" pill | profile avatar
+ *   2. Camera viewfinder (large rounded rect)
  *      – flash button (top-left) · zoom badge (top-right)
  *   3. Controls row: gallery | capture ring (gold) | flip camera
- *   4. History link with badge + chevron
+ *   4. History link
  *
- * After capture → navigates to SendScreen (Gửi đến...)
+ * After capture → navigates to SendScreen
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -44,6 +44,10 @@ import {
   CameraIcon,
   ChevronDownIcon,
 } from '../../../core/ui/Icons';
+import { ConnectionsSheet } from '../../connections/components/ConnectionsSheet';
+import { CreateFamilySheet } from '../../connections/components/CreateFamilySheet';
+import { JoinFamilySheet } from '../../connections/components/JoinFamilySheet';
+import { supabase } from '../../../data/storage/supabase';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const VIEWFINDER_SIZE = SCREEN_WIDTH - 24;
@@ -69,20 +73,58 @@ export function CameraScreen({ navigation }: Props) {
     requestCameraPermission,
   } = useCameraVM();
 
+  // Connection count (friends + families) from Supabase
+  const [connectionCount, setConnectionCount] = useState(0);
+  const [currentUserId, setCurrentUserId] = useState<string | undefined>(undefined);
+
+  // Sheet visibility
+  const [showConnections, setShowConnections] = useState(false);
+  const [showCreateFamily, setShowCreateFamily] = useState(false);
+  const [showJoinFamily, setShowJoinFamily] = useState(false);
+
   useEffect(() => {
     requestCameraPermission();
-  }, [requestCameraPermission]);
+    loadCurrentUser();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const goHome = () => {
-    (navigation as any).navigate('HomeTab');
+  const loadCurrentUser = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setCurrentUserId(user.id);
+        loadConnectionCount(user.id);
+      }
+    } catch (err) {
+      console.error('Error loading user:', err);
+    }
+  };
+
+  const loadConnectionCount = async (userId: string) => {
+    try {
+      // Friends count
+      const { count: friendCount } = await supabase
+        .from('friendships')
+        .select('id', { count: 'exact', head: true })
+        .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`)
+        .eq('status', 'accepted');
+
+      // Families count
+      const { count: familyCount } = await supabase
+        .from('family_members')
+        .select('family_id', { count: 'exact', head: true })
+        .eq('user_id', userId);
+
+      setConnectionCount((friendCount ?? 0) + (familyCount ?? 0));
+    } catch (err) {
+      console.error('Error loading connection count:', err);
+    }
   };
 
   const handleCapture = async () => {
     const uri = await capturePhoto();
     if (uri) {
-      // Navigate to the send screen with audience picker
       navigation.navigate('SendScreen', { photoUri: uri });
-      // Clear photo state so cam is fresh when user returns
       clearPhoto();
     }
   };
@@ -95,28 +137,45 @@ export function CameraScreen({ navigation }: Props) {
     }
   };
 
+  const handleConnectionsClose = () => {
+    setShowConnections(false);
+    // Refresh count after closing
+    if (currentUserId) loadConnectionCount(currentUserId);
+  };
+
   return (
     <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
       <StatusBar barStyle="light-content" backgroundColor="#000" />
 
       {/* ============ HEADER ============ */}
+      {/* iOS design: Chat (left) | Kết nối pill (center) | Avatar (right) */}
       <View style={styles.header}>
-        {/* Avatar → Home */}
-        <TouchableOpacity onPress={goHome} activeOpacity={0.7}>
-          <View style={styles.avatarCircle}>
-            <Text style={styles.avatarLetter}>M</Text>
-          </View>
+        {/* Chat button — left (navigates to Messages) */}
+        <TouchableOpacity
+          style={styles.headerBtn}
+          activeOpacity={0.7}
+          onPress={() => navigation.navigate('MessagesScreen')}
+        >
+          <ChatBubbleIcon size={20} color="#FFF" />
         </TouchableOpacity>
 
-        {/* Friend count pill */}
-        <TouchableOpacity style={styles.friendPill} activeOpacity={0.7}>
+        {/* Kết nối pill — center */}
+        <TouchableOpacity
+          style={styles.connectionPill}
+          activeOpacity={0.7}
+          onPress={() => setShowConnections(true)}
+        >
           <PeopleIcon size={16} color="#FFF" />
-          <Text style={styles.friendLabel}>33 người bạn</Text>
+          <Text style={styles.connectionLabel}>Kết nối {connectionCount}</Text>
         </TouchableOpacity>
 
-        {/* Chat */}
-        <TouchableOpacity style={styles.headerBtn} activeOpacity={0.7}>
-          <ChatBubbleIcon size={18} color="#FFF" />
+        {/* Profile avatar — right (navigates to ProfileScreen) */}
+        <TouchableOpacity
+          style={styles.avatarCircle}
+          activeOpacity={0.7}
+          onPress={() => navigation.navigate('ProfileScreen')}
+        >
+          <Text style={styles.avatarLetter}>U</Text>
         </TouchableOpacity>
       </View>
 
@@ -199,6 +258,39 @@ export function CameraScreen({ navigation }: Props) {
         <Text style={styles.historyLabel}>Lịch sử</Text>
       </TouchableOpacity>
       <ChevronDownIcon size={18} color="#8E8E93" />
+
+      {/* ============ MODALS ============ */}
+      <ConnectionsSheet
+        visible={showConnections}
+        onClose={handleConnectionsClose}
+        onCreateFamily={() => {
+          setShowConnections(false);
+          setShowCreateFamily(true);
+        }}
+        onJoinFamily={() => {
+          setShowConnections(false);
+          setShowJoinFamily(true);
+        }}
+        currentUserId={currentUserId}
+      />
+      <CreateFamilySheet
+        visible={showCreateFamily}
+        onClose={() => setShowCreateFamily(false)}
+        onCreated={() => {
+          setShowCreateFamily(false);
+          if (currentUserId) loadConnectionCount(currentUserId);
+        }}
+        currentUserId={currentUserId}
+      />
+      <JoinFamilySheet
+        visible={showJoinFamily}
+        onClose={() => setShowJoinFamily(false)}
+        onJoined={() => {
+          setShowJoinFamily(false);
+          if (currentUserId) loadConnectionCount(currentUserId);
+        }}
+        currentUserId={currentUserId}
+      />
     </SafeAreaView>
   );
 }
@@ -239,7 +331,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#FFF',
   },
-  friendPill: {
+  connectionPill: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#2C2C2E',
@@ -248,7 +340,7 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     gap: 8,
   },
-  friendLabel: {
+  connectionLabel: {
     fontSize: 14,
     fontWeight: '600',
     color: '#FFF',

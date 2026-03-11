@@ -8,11 +8,13 @@
  */
 
 import AudioRecorderPlayer from 'react-native-audio-recorder-player';
-import type {
+import {
   AVEncoderAudioQualityIOSType,
-  AVEncodingOption,
   AudioEncoderAndroidType,
   AudioSourceAndroidType,
+  type AudioSet,
+} from 'react-native-audio-recorder-player';
+import type {
   PlayBackType,
   RecordBackType,
 } from 'react-native-audio-recorder-player';
@@ -28,18 +30,18 @@ export interface RecordingResult {
 }
 
 class AudioRecorder {
-  private audioRecorderPlayer: AudioRecorderPlayer;
+  private audioRecorderPlayer = AudioRecorderPlayer;
   private recordingPath: string = '';
   private waveformData: number[] = [];
   private recordingDuration: number = 0;
-  private recordingTimer: NodeJS.Timeout | null = null;
+  private recordingTimer: ReturnType<typeof setTimeout> | null = null;
   
   public isRecording = false;
   public isPlaying = false;
   public permissionGranted = false;
 
   constructor() {
-    this.audioRecorderPlayer = new AudioRecorderPlayer();
+    this.audioRecorderPlayer = AudioRecorderPlayer;
     this.audioRecorderPlayer.setSubscriptionDuration(0.1); // Update every 100ms
   }
 
@@ -96,12 +98,12 @@ class AudioRecorder {
       this.recordingPath = `${RNFS.DocumentDirectoryPath}/${fileName}`;
 
       // Configure audio settings
-      const audioSet: any = {
+      const audioSet: AudioSet = {
         AudioEncoderAndroid: AudioEncoderAndroidType.AAC,
         AudioSourceAndroid: AudioSourceAndroidType.MIC,
         AVEncoderAudioQualityKeyIOS: AVEncoderAudioQualityIOSType.high,
         AVNumberOfChannelsKeyIOS: 1,
-        AVFormatIDKeyIOS: AVEncodingOption.aac,
+        AVFormatIDKeyIOS: 'aac',
       };
 
       console.log('🎙️ Recording started:', this.recordingPath);

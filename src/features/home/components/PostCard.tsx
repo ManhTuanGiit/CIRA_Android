@@ -8,29 +8,32 @@ interface PostCardProps {
 }
 
 export const PostCard: React.FC<PostCardProps> = ({ post }) => {
+  const displayName = post.owner_id;
+  const displayImage = post.image_path ?? '';
+
   return (
     <Card style={styles.container}>
       <View style={styles.header}>
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>
-            {post.userName.charAt(0).toUpperCase()}
+            {displayName.charAt(0).toUpperCase()}
           </Text>
         </View>
         <View style={styles.userInfo}>
-          <Text style={styles.userName}>{post.userName}</Text>
+          <Text style={styles.userName}>{displayName}</Text>
           <Text style={styles.timestamp}>
-            {new Date(post.createdAt).toLocaleDateString()}
+            {new Date(post.created_at).toLocaleDateString()}
           </Text>
         </View>
       </View>
 
-      <Image source={{ uri: post.photoUri }} style={styles.photo} />
+      <Image source={{ uri: displayImage }} style={styles.photo} />
 
-      {post.caption && <Text style={styles.caption}>{post.caption}</Text>}
+      {post.message && <Text style={styles.caption}>{post.message}</Text>}
 
       <View style={styles.footer}>
-        <Text style={styles.stat}>❤️ {post.likesCount}</Text>
-        <Text style={styles.stat}>💬 {post.commentsCount}</Text>
+        <Text style={styles.stat}>❤️ {post.like_count}</Text>
+        <Text style={styles.stat}>💬 {post.comment_count}</Text>
       </View>
     </Card>
   );

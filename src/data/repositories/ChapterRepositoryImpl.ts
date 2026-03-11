@@ -6,10 +6,20 @@ import { logger } from '../../core/utils/logger';
 export class ChapterRepositoryImpl implements ChapterRepository {
   async getChapters(userId: string): Promise<Chapter[]> {
     try {
+      let ownerId = userId;
+      if (ownerId === 'current-user') {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          logger.warn('ChapterRepository: getChapters called without authenticated user');
+          return [];
+        }
+        ownerId = user.id;
+      }
+
       const { data, error } = await supabase
         .from('chapters')
         .select('*')
-        .eq('owner_id', userId)
+        .eq('owner_id', ownerId)
         .eq('is_active', true)
         .order('created_at', { ascending: false });
 

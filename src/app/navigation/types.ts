@@ -1,11 +1,10 @@
 import type { NavigatorScreenParams } from '@react-navigation/native';
 
-// Root Tabs Navigator
+// Root Tabs Navigator — 3 tabs: Home (Camera), My Story, Assistant
 export type RootTabsParamList = {
-  HomeTab: NavigatorScreenParams<HomeStackParamList>;
-  CameraTab: NavigatorScreenParams<CameraStackParamList>;
+  HomeTab: NavigatorScreenParams<CameraStackParamList>;  // Camera IS the Home tab
   MyStoryTab: NavigatorScreenParams<MyStoryStackParamList>;
-  ProfileTab: undefined;
+  AssistantTab: NavigatorScreenParams<AssistantStackParamList>;
 };
 
 // Home Stack Navigator
@@ -31,6 +30,12 @@ export type CameraStackParamList = {
   ChapterPickerSheet: {
     photoUri: string;
   };
+  ProfileScreen: undefined;
+  MessagesScreen: undefined;
+  ChatScreen: {
+    otherUserId: string;
+    otherUsername: string;
+  };
 };
 
 // MyStory Stack Navigator
@@ -43,4 +48,9 @@ export type MyStoryStackParamList = {
   LiveChapterScreen: {
     chapterId: string;
   };
+};
+
+// Assistant Stack Navigator
+export type AssistantStackParamList = {
+  AssistantScreen: undefined;
 };

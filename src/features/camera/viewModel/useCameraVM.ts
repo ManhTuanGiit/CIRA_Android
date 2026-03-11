@@ -87,7 +87,7 @@ export function useCameraVM() {
     setState(p => ({ ...p, capturing: true }));
 
     // Simulate capture delay
-    await new Promise(r => setTimeout(r, 300));
+    await new Promise<void>(resolve => setTimeout(() => resolve(), 300));
 
     // Stub: return a placeholder picsum image
     const uri = `https://picsum.photos/1080/1080?random=${Date.now()}`;

@@ -7,6 +7,9 @@ import {
   PreviewScreen,
   ChapterPickerSheet,
 } from '../../features/camera/screens';
+import { ProfileScreen } from '../../features/profile/screens/ProfileScreen';
+import { MessagesScreen } from '../../features/messaging/screens/MessagesScreen';
+import { ChatScreen } from '../../features/messaging/screens/ChatScreen';
 
 const Stack = createNativeStackNavigator<CameraStackParamList>();
 
@@ -35,6 +38,21 @@ export function CameraStack() {
           presentation: 'modal',
           title: 'Select Chapter',
         }}
+      />
+      <Stack.Screen
+        name="ProfileScreen"
+        component={ProfileScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="MessagesScreen"
+        component={MessagesScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="ChatScreen"
+        component={ChatScreen}
+        options={{ headerShown: false }}
       />
     </Stack.Navigator>
   );

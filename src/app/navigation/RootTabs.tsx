@@ -1,63 +1,59 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text } from 'react-native';
 import type { RootTabsParamList } from './types';
-import { HomeStack } from './HomeStack';
 import { CameraStack } from './CameraStack';
 import { MyStoryStack } from './MyStoryStack';
-import { ProfileScreen } from '../../features/profile/screens';
+import { AssistantStack } from './AssistantStack';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 const Tab = createBottomTabNavigator<RootTabsParamList>();
-
-// Tab bar icons
-const TabIcon = ({ icon, color }: { icon: string; color: string }) => (
-  <Text style={{ color }}>{icon}</Text>
-);
 
 export function RootTabs() {
   return (
     <Tab.Navigator
-      screenOptions={{
+      initialRouteName="HomeTab"
+      screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarActiveTintColor: '#007AFF',
+        tabBarActiveTintColor: '#000',
         tabBarInactiveTintColor: '#8E8E93',
-      }}
+        tabBarStyle: {
+          backgroundColor: '#FFF',
+          borderTopColor: '#E5E5EA',
+          borderTopWidth: 0.5,
+          height: 56,
+          paddingBottom: 8,
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '500',
+        },
+        tabBarIcon: ({ color, size, focused }) => {
+          let iconName: string;
+          if (route.name === 'HomeTab') {
+            iconName = focused ? 'home' : 'home-outline';
+          } else if (route.name === 'MyStoryTab') {
+            iconName = focused ? 'book' : 'book-outline';
+          } else {
+            iconName = focused ? 'mic' : 'mic-outline';
+          }
+          return <Icon name={iconName} size={size ?? 24} color={color} />;
+        },
+      })}
     >
       <Tab.Screen
         name="HomeTab"
-        component={HomeStack}
-        options={{
-          title: 'Home',
-          // eslint-disable-next-line react/no-unstable-nested-components
-          tabBarIcon: ({ color }) => <TabIcon icon="🏠" color={color} />,
-        }}
-      />
-      <Tab.Screen
-        name="CameraTab"
         component={CameraStack}
-        options={{
-          title: 'Camera',
-          // eslint-disable-next-line react/no-unstable-nested-components
-          tabBarIcon: ({ color }) => <TabIcon icon="📷" color={color} />,
-        }}
+        options={{ tabBarLabel: 'Home' }}
       />
       <Tab.Screen
         name="MyStoryTab"
         component={MyStoryStack}
-        options={{
-          title: 'My Story',
-          // eslint-disable-next-line react/no-unstable-nested-components
-          tabBarIcon: ({ color }) => <TabIcon icon="📚" color={color} />,
-        }}
+        options={{ tabBarLabel: 'My Story' }}
       />
       <Tab.Screen
-        name="ProfileTab"
-        component={ProfileScreen}
-        options={{
-          title: 'Profile',
-          // eslint-disable-next-line react/no-unstable-nested-components
-          tabBarIcon: ({ color }) => <TabIcon icon="👤" color={color} />,
-        }}
+        name="AssistantTab"
+        component={AssistantStack}
+        options={{ tabBarLabel: 'Assistant' }}
       />
     </Tab.Navigator>
   );
